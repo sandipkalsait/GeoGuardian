@@ -1,0 +1,39 @@
+{
+	"hero": {
+		"title": "Protecting Tourists Across India",
+		"subtitle": "Blockchain-anchored digital IDs + AI-driven anomaly detection + realtime incident response",
+		"pilot": "Pan-India Pilot",
+		"date": "19-09-2025",
+		"presenter": "Sandip.Kalsait"
+	},
+	"executiveSummary": {
+		"problem": [
+			"Safety risks in remote/high-risk tourist areas",
+			"Delayed incident response, lack of tamper-proof evidence",
+			"Policing gaps, limited real-time monitoring"
+		],
+		"solution": [
+			"Digital IDs anchored on blockchain",
+			"AI-driven anomaly detection & geo-fence alerts",
+			"Realtime incident response via app & dashboard"
+		],
+		"ask": [
+			"Pilot resources",
+			"PoC funding",
+			"Integration approvals"
+		]
+	},
+	"objectives": [
+		"Save lives",
+		"Reduce response time",
+		"Tamper-proof evidence",
+		"Privacy-first approach",
+		"Scalable pan-India roll-out"
+	],
+	"contacts": {
+		"core": "Sandip.Kalsait",
+		"devLead": "Sandip.Kalsait",
+		"productOwner": "Sandip.Kalsait",
+		"legalAdvisor": "Sandip.Kalsait"
+	}
+}
