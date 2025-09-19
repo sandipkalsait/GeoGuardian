@@ -1,0 +1,55 @@
+name: Deploy to Firebase Hosting on PR
+
+on: pull_request
+
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  build_and_preview:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting (Preview)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SMART_BHARAT_SHOP }}
+          projectId: geo-guardian
+
+      - name: Send Email Notification
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "[PR #${{ github.event.pull_request.number }}] Firebase Deploy - ${{ job.status }}"
+          to: gay23sat@gmail.com,kartiksmore4454@gmail.com,pratik49484@gmail.com,riteshj4133@gmail.com,kalsaitsandip91@gmail.com,thombarechinmai@gmail.com
+          from: GitHub Actions <${{ secrets.EMAIL_USERNAME }}>
+          body: |
+            🚀 Firebase PR Deployment Report
+            -------------------------------
+            Status: ${{ job.status }}
+            Repository: ${{ github.repository }}
+            Pull Request: #${{ github.event.pull_request.number }}
+            Branch: ${{ github.head_ref }}
+            Commit: ${{ github.sha }}
+            Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
