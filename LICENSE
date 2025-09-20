@@ -1,21 +1,21 @@
-Copyright (c) 2025 Sandip.Kalsait. All rights reserved.
+Copyright (c) 2025 GeoGuardian. All Rights Reserved.
 
-This repository contains proprietary software and confidential information owned by Sandip.Kalsait.
-No license, express or implied, is granted to any party under any patent, trademark, copyright,
-or other intellectual property right of GeoGuardian by virtue of distribution of this code.
+This repository contains proprietary software and confidential information owned by Sandip Kalsait. 
+No license, express or implied, is granted to any party under any patent, trademark, copyright, 
+or other intellectual property right of GeoGuardian by virtue of the distribution of this code.
 
 Permitted Use:
-- Contributors with explicit written permission from GeoGuardian may access, modify, and
-  distribute code only in accordance with the terms set out in a separate agreement.
+- Access, modification, or distribution of this code is strictly limited to contributors who have received explicit written permission from GeoGuardian.
+- All permitted use must comply with the terms of a separate written agreement with GeoGuardian.
 
-Prohibited Actions (without express written permission):
-- Copy, modify, reproduce, distribute, publish, sublicense, or create derivative works from the
-  source code for any commercial or public purpose.
-- Reverse engineer, decompile or otherwise attempt to discover any source or trade secrets.
+Prohibited Actions (Without Explicit Written Permission):
+- Copying, modifying, reproducing, distributing, publishing, sublicensing, or creating derivative works of the source code for any commercial or public purpose.
+- Reverse engineering, decompiling, or otherwise attempting to discover the source code or trade secrets.
+- Sharing or transferring the code to any third party not explicitly authorized by GeoGuardian.
 
 Contributions:
-- All external contributors must execute a Contributor License Agreement (CLA) assigning
-  necessary intellectual property rights or granting sufficient license to GeoGuardian.
+- All external contributors must sign a Contributor License Agreement (CLA) that either assigns the necessary intellectual property rights to GeoGuardian or grants a sufficient license for the contribution.
 
-For licensing inquiries or to request permission to use or license this code, contact:
-Kalsaitsandip91@gmail.com
+Miscellaneous:
+- Any unauthorized use of this software may result in civil and criminal liability.
+- For licensing inquiries, permission requests, or other legal matters, contact: Kalsaitsandip91@gmail.com
