@@ -1,0 +1,44 @@
+name: geo_guardian
+description: "Smart Tourist Safety Monitoring & Incident Response System using AI, Geo-Fencing, and Blockchain-based Digital ID."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  firebase_database: ^11.1.4
+  firebase_storage: ^12.3.4
+  firebase_messaging: ^15.1.3
+  flutter_secure_storage: ^9.2.2
+  riverpod: ^2.6.1
+  dio: ^5.7.0
+  geolocator: ^12.0.0
+  permission_handler: ^11.3.1
+  workmanager: ^0.5.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  image_picker: ^1.1.2
+  easy_localization: ^3.0.7
+  cupertino_icons: ^1.0.8
+  encrypt: ^5.0.3       # For EncryptionService
+  uuid: ^4.3.0          # For UUID generation
+  crypto: ^3.0.3        # Already included, keep it
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  mockito: ^5.4.4
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

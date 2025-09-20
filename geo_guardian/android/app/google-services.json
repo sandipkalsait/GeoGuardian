@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "534424149070",
+    "firebase_url": "https://geo-guardian-default-rtdb.firebaseio.com",
+    "project_id": "geo-guardian",
+    "storage_bucket": "geo-guardian.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:534424149070:android:0d0bd7334c59b98f3ef71f",
+        "android_client_info": {
+          "package_name": "com.gg.geo_guardian"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCyILxPDsc-cqlNvfMAUipvIJSxqW2SavE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

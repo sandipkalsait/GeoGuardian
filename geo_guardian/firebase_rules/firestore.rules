@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /tourists/{digitalIdHash} {
+      allow read, write: if request.auth != null && request.auth.token.digitalIdHash == digitalIdHash;
+    }
+    match /alerts/{alertId} {
+      allow create: if request.auth != null && request.resource.data.digitalIdHash == request.auth.token.digitalIdHash;
+      allow read: if request.auth != null && (
+         request.auth.token.role == 'responder' && resource.data.assignedUnitId == request.auth.uid
+         || request.auth.uid == resource.data.digitalIdHash
+      );
+    }
+  }
+}

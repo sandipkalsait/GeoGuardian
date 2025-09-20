@@ -1,0 +1,20 @@
+default_platform(:android)
+
+platform :android do
+  desc "Push a new beta build to Firebase App Distribution"
+  lane :beta do
+    gradle(task: "clean")
+    gradle(task: "assembleRelease")
+    firebase_app_distribution(
+      app: "1:XXXXXXXX:android:XXXXXXXX",
+      testers: "devs@example.com",
+      release_notes: "Beta build"
+    )
+  end
+
+  desc "Release to Play Store (placeholder)"
+  lane :release do
+    gradle(task: "assembleRelease")
+    supply(track: "production")
+  end
+end
