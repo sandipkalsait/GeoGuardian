@@ -8,7 +8,7 @@ Thank you for your interest in contributing to GeoGuardian! Your contributions h
 
 Before submitting any code, all contributors must sign the Contributor License Agreement (CLA). This ensures GeoGuardian has the legal rights to use, modify, and distribute your contributions.
 
-- Read & Sign the CLA here: [Link to CLA PDF or online form]
+- Read & Sign the CLA here: [CLA.md](./CLA.md)
 - No pull requests will be merged without a signed CLA.
 
 ---
@@ -67,6 +67,7 @@ Unacceptable behavior will not be tolerated and may result in removal from the p
 6. License & Permissions
 
 By contributing, you agree that your contributions will be licensed under the terms of GeoGuardian’s license agreement. See LICENSE for full details.
+
 
 For questions regarding licensing or contributions, contact: Kalsaitsandip91@gmail.com
 
