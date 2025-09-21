@@ -5,7 +5,7 @@ import {
   Routes,
   Route,
   Navigate,
-  useNavigate,
+  
 } from "react-router-dom";
 
 import Logo from "/geo-guardian.png";
@@ -19,7 +19,7 @@ import PoliceDashboard from "./pages/PoliceDashboard";
 
 // Landing page component (your original App UI)
 const LandingPage: React.FC = () => {
-  const navigate = useNavigate();
+  
 
   return (
     <div className="geo-guardian-home">

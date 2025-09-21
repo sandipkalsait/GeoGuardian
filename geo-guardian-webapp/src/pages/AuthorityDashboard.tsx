@@ -1,13 +1,10 @@
 import React, { useState, useMemo } from "react";
 import {
   AppBar,
-  Avatar,
   Box,
   Button,
   Card,
-  CardContent,
   Container,
-  Divider,
   Grid,
   IconButton,
   InputAdornment,
@@ -28,22 +25,20 @@ import {
   Toolbar,
   Tooltip,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from "@mui/material";
 import {
   Search as SearchIcon,
-  Notifications as NotificationsIcon,
+  
   AddAlert as AddAlertIcon,
   AssignmentInd as AssignmentIndIcon,
-  Logout as LogoutIcon,
+ 
   Settings as SettingsIcon,
   ReportProblem as ReportProblemIcon,
   CheckCircle as CheckCircleIcon,
   Person as PersonIcon,
-  Assignment as AssignmentIcon,
+  
 } from "@mui/icons-material";
-import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
+
 import "leaflet/dist/leaflet.css";
 
 // Mock Data Types
@@ -162,43 +157,7 @@ const Header: React.FC<{ userName: string; onLogout: () => void }> = ({
 // Heatmap Component (using Leaflet CircleMarkers as placeholders)
 
 
-const Heatmap: React.FC = () => {
-  // Example Indian tourist clusters with mock intensity and labels
-  const clusters = [
-    { lat: 28.6139, lng: 77.2090, intensity: 60, label: "Delhi - Tourist Cluster" },
-    { lat: 19.076, lng: 72.8777, intensity: 50, label: "Mumbai - Tourist Cluster" },
-    { lat: 26.9124, lng: 75.7873, intensity: 40, label: "Jaipur - Tourist Cluster" },
-    { lat: 15.2993, lng: 74.1240, intensity: 30, label: "Goa - Tourist Cluster" },
-    { lat: 27.1767, lng: 78.0081, intensity: 70, label: "Agra - High-Risk Zone" }, // example high risk
-  ];
 
-  return (
-    <MapContainer
-      center={[20.5937, 78.9629]} // Center of India approx
-      zoom={5}
-      style={{ height: 300, width: "100%" }}
-      scrollWheelZoom={false}
-      aria-label="Interactive heatmap showing tourist clusters and high-risk zones in India"
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {clusters.map(({ lat, lng, intensity, label }, i) => (
-        <CircleMarker
-          key={i}
-          center={[lat, lng]}
-          radius={intensity / 5}
-          fillOpacity={0.5}
-          stroke={false}
-          fillColor={intensity > 60 ? "red" : intensity > 40 ? "orange" : "yellow"}
-        >
-          <Popup>{label}</Popup>
-        </CircleMarker>
-      ))}
-    </MapContainer>
-  );
-};
 
 // Digital Tourist ID Records Table
 const TouristIDRecords: React.FC = () => {
@@ -525,8 +484,7 @@ const AuthorityDashboard: React.FC<{ userName: string; onLogout: () => void }> =
   const activeAlerts = 24;
   const resolvedIncidents = 1150;
 
-  const theme = useTheme();
-  const isSmDown = useMediaQuery(theme.breakpoints.down("sm"));
+
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
@@ -564,7 +522,7 @@ const AuthorityDashboard: React.FC<{ userName: string; onLogout: () => void }> =
         <Typography variant="h6" gutterBottom>
           Tourist Clusters & High-Risk Zones
         </Typography>
-        <Heatmap />
+        
 
         {/* Digital Tourist ID Records */}
         <TouristIDRecords />
