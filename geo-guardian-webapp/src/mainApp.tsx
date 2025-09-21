@@ -5,7 +5,6 @@ import {
   Routes,
   Route,
   Navigate,
-  useNavigate,
 } from "react-router-dom";
 
 import Logo from "/geo-guardian.png";
@@ -19,8 +18,6 @@ import PoliceDashboard from "./pages/PoliceDashboard";
 
 // Landing page component (your original App UI)
 const LandingPage: React.FC = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="geo-guardian-home">
       <nav className="gg-navbar">
@@ -29,16 +26,11 @@ const LandingPage: React.FC = () => {
           <span className="gg-title">Geo Guardian</span>
         </div>
         <div className="gg-navbar-sub">MVP — Prototype</div>
-        <div style={{ display: "flex", gap: "10px" }}>
-          <a href="/login" className="gg-btn">
-            Login
-          </a>
-          <a href="/register" className="gg-btn">
-            Register
-          </a>
-          {/* New buttons to preview dashboards without login */}
-          
+        <div>
+          <a href="/login" className="gg-btn">Login</a>
+          <a href="/register" className="gg-btn">Register</a>
         </div>
+        
       </nav>
 
       <main className="gg-main">
@@ -175,7 +167,8 @@ const App: React.FC = () => {
             )
           }
         />
-         {/* Authority Dashboard */}
+
+        {/* Authority Dashboard */}
         <Route
           path="/authority"
           element={
@@ -197,8 +190,7 @@ const App: React.FC = () => {
               <Navigate to="/login" replace />
             )
           }
-        />
-        
+        />        
 
         {/* Catch all - redirect to root */}
         <Route path="*" element={<Navigate to="/" replace />} />
