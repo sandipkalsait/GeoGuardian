@@ -1,6 +1,6 @@
 # geo_guardian
 
-Smart Tourist Safety Monitoring & Incident Response System using Al, Geo-Fencing, and Blockchain-based Digital ID.
+Geo Guardian
 
 ## Getting Started
 

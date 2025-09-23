@@ -1,0 +1,31 @@
+# Directory where your ARB files live
+arb-dir: lib/l10n
+
+# The template (source) ARB file used as the basis for all translations
+template-arb-file: app_en.arb
+
+# The Dart file that will be generated containing your AppLocalizations class
+output-localization-file: app_localizations.dart
+
+# The Dart class that will be generated
+output-class: AppLocalizations
+
+# Optional: the directory under lib/ where the generated file will be placed
+# Default is lib/l10n
+output-dir: lib/l10n
+
+# Optional: whether to use deferred loading for each locale’s messages
+# Improves initial startup but increases per-locale code size
+# deferred-loading: true
+
+# Optional: fallback locale if a translation is missing (format: languageCode_countryCode)
+# Example: if hi_IN is missing a key, fallback to en_US
+# fallback-locales:
+#   - en_US
+
+# Optional: specify file name prefix for each locale’s generated Dart library
+# Defaults to “app_localizations_”
+# header: |
+#   // GENERATED CODE – DO NOT EDIT
+
+# Uncomment and adjust any optional settings above as needed

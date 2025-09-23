@@ -13,7 +13,12 @@
           "package_name": "com.gg.geo_guardian"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "534424149070-u471l8gs94pp9tm8j65l0ocfo3hbn4bp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCyILxPDsc-cqlNvfMAUipvIJSxqW2SavE"
@@ -21,7 +26,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "534424149070-u471l8gs94pp9tm8j65l0ocfo3hbn4bp.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "534424149070-amqkdrs7ttaljv27ko01hkfb6rvp1brm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.gg.geoGuardian"
+              }
+            }
+          ]
         }
       }
     }

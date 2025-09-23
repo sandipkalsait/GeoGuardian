@@ -1,0 +1,197 @@
+{
+  "@@locale": "en",
+  "appName": "GeoGuardian",
+  "@appName": {
+    "description": "The application name"
+  },
+
+  "welcome": "Welcome to GeoGuardian",
+  "@welcome": {
+    "description": "Welcome message"
+  },
+
+  "emergencyAlert": "Emergency Alert",
+  "@emergencyAlert": {
+    "description": "Emergency alert title"
+  },
+
+  "panicButton": "PANIC",
+  "@panicButton": {
+    "description": "Main panic button text"
+  },
+
+  "sendingAlert": "Sending emergency alert...",
+  "@sendingAlert": {
+    "description": "Loading message when sending alert"
+  },
+
+  "alertSent": "Emergency alert sent successfully",
+  "@alertSent": {
+    "description": "Success message after sending alert"
+  },
+
+  "alertFailed": "Failed to send emergency alert. Retrying...",
+  "@alertFailed": {
+    "description": "Error message when alert fails"
+  },
+
+  "confirmEmergency": "Confirm Emergency",
+  "@confirmEmergency": {
+    "description": "Confirmation dialog title"
+  },
+
+  "emergencyConfirmation": "This will send an emergency alert to authorities and your emergency contacts. Continue?",
+  "@emergencyConfirmation": {
+    "description": "Emergency confirmation message"
+  },
+
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button"
+  },
+
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button"
+  },
+
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings menu"
+  },
+
+  "language": "Language",
+  "@language": {
+    "description": "Language setting"
+  },
+
+  "location": "Location",
+  "@location": {
+    "description": "Location settings"
+  },
+
+  "locationPermission": "Location Permission Required",
+  "@locationPermission": {
+    "description": "Location permission dialog title"
+  },
+
+  "locationPermissionMessage": "This app requires location access to provide emergency services. Please grant location permission.",
+  "@locationPermissionMessage": {
+    "description": "Location permission explanation"
+  },
+
+  "grantPermission": "Grant Permission",
+  "@grantPermission": {
+    "description": "Grant permission button"
+  },
+
+  "profile": "Profile",
+  "@profile": {
+    "description": "Profile section"
+  },
+
+  "emergencyContacts": "Emergency Contacts",
+  "@emergencyContacts": {
+    "description": "Emergency contacts section"
+  },
+
+  "addContact": "Add Contact",
+  "@addContact": {
+    "description": "Add contact button"
+  },
+
+  "safetyScore": "Safety Score",
+  "@safetyScore": {
+    "description": "Safety score label"
+  },
+
+  "offline": "Offline",
+  "@offline": {
+    "description": "Offline status indicator"
+  },
+
+  "online": "Online",
+  "@online": {
+    "description": "Online status indicator"
+  },
+
+  "kycVerification": "Identity Verification",
+  "@kycVerification": {
+    "description": "KYC verification title"
+  },
+
+  "verifyIdentity": "Verify Identity",
+  "@verifyIdentity": {
+    "description": "Verify identity button"
+  },
+
+  "biometricAuth": "Biometric Authentication",
+  "@biometricAuth": {
+    "description": "Biometric authentication option"
+  },
+
+  "useFingerprint": "Use Fingerprint",
+  "@useFingerprint": {
+    "description": "Fingerprint authentication option"
+  },
+
+  "useFaceId": "Use Face ID",
+  "@useFaceId": {
+    "description": "Face ID authentication option"
+  },
+
+  "familyTracking": "Family Tracking",
+  "@familyTracking": {
+    "description": "Family tracking feature"
+  },
+
+  "shareLocation": "Share Location",
+  "@shareLocation": {
+    "description": "Share location option"
+  },
+
+  "stopSharing": "Stop Sharing",
+  "@stopSharing": {
+    "description": "Stop sharing location"
+  },
+
+  "geofences": "Safe Zones",
+  "@geofences": {
+    "description": "Geofences/safe zones"
+  },
+
+  "insideSafeZone": "Inside Safe Zone",
+  "@insideSafeZone": {
+    "description": "Inside safe zone status"
+  },
+
+  "outsideSafeZone": "Outside Safe Zone",
+  "@outsideSafeZone": {
+    "description": "Outside safe zone warning"
+  },
+
+  "help": "Help",
+  "@help": {
+    "description": "Help section"
+  },
+
+  "about": "About",
+  "@about": {
+    "description": "About section"
+  },
+
+  "privacyPolicy": "Privacy Policy",
+  "@privacyPolicy": {
+    "description": "Privacy policy link"
+  },
+
+  "logout": "Logout",
+  "@logout": {
+    "description": "Logout button"
+  }
+}
