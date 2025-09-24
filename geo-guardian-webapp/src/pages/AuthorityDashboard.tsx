@@ -1,539 +1,684 @@
-import React, { useState, useMemo } from "react";
+// AuthorityDashboard.tsx
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AppBar,
-  Box,
-  Button,
-  Card,
-  Container,
-  Grid,
+  Toolbar,
+  Typography,
   IconButton,
+  TextField,
   InputAdornment,
+  Box,
+  Drawer,
   List,
-  ListItem,
+  ListItemButton,
+  ListItemIcon,
   ListItemText,
+  CssBaseline,
   Menu,
   MenuItem,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
+  Avatar,
   TableContainer,
+  Table,
   TableHead,
   TableRow,
-  TextField,
-  Toolbar,
+  TableCell,
+  Paper,
+  Badge,
+  Divider,
   Tooltip,
-  Typography,
+  useMediaQuery,
+  ThemeProvider,
+  createTheme,
 } from "@mui/material";
-import {
-  Search as SearchIcon,
-  
-  AddAlert as AddAlertIcon,
-  AssignmentInd as AssignmentIndIcon,
- 
-  Settings as SettingsIcon,
-  ReportProblem as ReportProblemIcon,
-  CheckCircle as CheckCircleIcon,
-  Person as PersonIcon,
-  
-} from "@mui/icons-material";
+import SearchIcon from "@mui/icons-material/Search";
+import MenuIcon from "@mui/icons-material/Menu";
+import SettingsIcon from "@mui/icons-material/Settings";
+import HomeIcon from "@mui/icons-material/Home";
+import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
+import PeopleIcon from "@mui/icons-material/Person";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import DescriptionIcon from "@mui/icons-material/Description";
+import LocalPoliceIcon from "@mui/icons-material/LocalPolice";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import LogoutIcon from "@mui/icons-material/Logout";
+import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsActiveOutlined";
+import Button from "@mui/material/Button";
 
+import { MapContainer, TileLayer, Rectangle } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Mock Data Types
-interface TouristID {
-  id: string;
-  name: string;
-  nationality: string;
-  kycStatus: string;
-  tripItinerary: string;
-  validUntil: string;
-}
+import AlertManagementSection from "./AlertManagementSection";
+import CaseFIRManagementSection from "./CaseFIRManagementSection ";
+import EmergencyResponseCoordinationSection from "./EmergencyResponseCoordinationSection";
+import TouristMonitoringSafetySection from "./TouristMonitoringSafetySection";
+import UserRoleManagementSection from "./UserRoleManagementSection";
+import SystemSettingsNotificationsSection from "./SystemSettingsNotificationsSection";
 
-interface AlertIncident {
-  id: string;
-  type: string;
-  urgency: "Low" | "Medium" | "High" | "Critical";
-  status: "Open" | "Assigned" | "Resolved";
-  assignedTo?: string;
-  date: string;
-}
+// Theme
+const theme = createTheme({
+  palette: {
+    mode: "light",
+    primary: { main: "#2b9bd6", dark: "#0f6fb1", light: "#73c6f1" },
+    secondary: { main: "#0f4c75" },
+    background: { default: "#f7f9fc", paper: "#ffffff" },
+    text: { primary: "#152232", secondary: "rgba(21,34,50,0.7)" },
+    error: { main: "#d64545" },
+    warning: { main: "#f0ad4e" },
+    success: { main: "#2eb85c" },
+    info: { main: "#3ba0f2" },
+  },
+  shape: { borderRadius: 12 },
+  typography: {
+    fontFamily:
+      "'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+    button: { textTransform: "none", fontWeight: 600 },
+  },
+  components: {
+    MuiPaper: { styleOverrides: { rounded: { borderRadius: 12 } } },
+  },
+});
 
-interface Notification {
-  id: string;
-  message: string;
-  date: string;
-  critical?: boolean;
-}
+// Fully hidden when collapsed
 
-// Reusable Stat Card Component
-const StatCard: React.FC<{
-  title: string;
-  value: number | string;
-  icon: React.ReactNode;
-  tooltip: string;
-}> = ({ title, value, icon, tooltip }) => (
-  <Tooltip title={tooltip} arrow>
-    <Card
-      variant="outlined"
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        p: 2,
-        cursor: "default",
-        height: "100%",
-      }}
-      aria-label={`${title}: ${value}`}
-    >
-      <Box sx={{ mr: 2, fontSize: 40, color: "primary.main" }}>{icon}</Box>
-      <Box>
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-          {title}
-        </Typography>
-        <Typography variant="h5" fontWeight="bold">
-          {value}
-        </Typography>
+const drawerWidthExpanded = 288;
+
+type Section =
+  | "overview"
+  | "alerts"
+  | "cases"
+  | "response"
+  | "tourists"
+  | "reports"
+  | "users"
+  | "settings";
+
+type SectionItem = { id: Section; label: string; icon: React.ReactNode };
+
+const sections: SectionItem[] = [
+  { id: "overview", label: "Overview", icon: <HomeIcon /> },
+  { id: "alerts", label: "Alert Management", icon: <NotificationsActiveIcon /> },
+  { id: "cases", label: "Case & FIR", icon: <DescriptionIcon /> },
+  { id: "response", label: "Emergency Response", icon: <LocalPoliceIcon /> },
+  { id: "tourists", label: "Tourist Safety", icon: <LocationOnIcon /> },
+  { id: "reports", label: "Reports & Analytics", icon: <AssessmentIcon /> },
+  { id: "users", label: "User & Roles", icon: <PeopleIcon /> },
+  { id: "settings", label: "Settings", icon: <SettingsIcon /> },
+];
+
+// Sample user data
+const userData = [
+  {
+    touristId: 101,
+    createdAt: "2025-09-20",
+    digitalId: "DGT-1001",
+    documentNumber: "X1234567",
+    documentType: "Passport",
+    email: "tourist1@example.com",
+    emergencyContacts: "1234567890",
+    fullName: "John Doe",
+    isActive: true,
+    isVerified: true,
+    startDate: "2025-09-18",
+    endDate: "2025-09-25",
+  },
+  {
+    touristId: 102,
+    createdAt: "2025-09-15",
+    digitalId: "DGT-1002",
+    documentNumber: "Y7654321",
+    documentType: "ID Card",
+    email: "tourist2@example.com",
+    emergencyContacts: "0987654321",
+    fullName: "Jane Smith",
+    isActive: true,
+    isVerified: false,
+    startDate: "2025-09-14",
+    endDate: "2025-09-21",
+  },
+];
+
+// Overview
+const OverviewSection: React.FC = () => {
+  const navigate = useNavigate();
+
+  return (
+    <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+        }}
+      >
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: 0.2 }}>
+            User Records
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Recently active tourists and verification status
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <TextField
+            size="small"
+            placeholder="Search users, IDs, documents…"
+            sx={{
+              minWidth: 280,
+              "& .MuiOutlinedInput-root": {
+                background: "rgba(255,255,255,0.9)",
+                backdropFilter: "blur(6px)",
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate("/tourist")}
+            sx={{ px: 2.25 }}
+          >
+            Open Tourist
+          </Button>
+        </Box>
       </Box>
-    </Card>
-  </Tooltip>
-);
 
-// Header Component
-const Header: React.FC<{ userName: string; onLogout: () => void }> = ({
-  userName,
-  onLogout,
-}) => {
+      <Paper
+        elevation={0}
+        sx={{
+          p: 0,
+          borderRadius: 2,
+          overflow: "hidden",
+          border: "1px solid rgba(15,76,117,0.08)",
+          boxShadow: "0 8px 28px rgba(20,35,52,0.06)",
+        }}
+      >
+        <TableContainer sx={{ maxHeight: 420 }}>
+          <Table stickyHeader size="small">
+            <TableHead>
+              <TableRow
+                sx={{
+                  "& th": {
+                    fontWeight: 700,
+                    color: "primary.dark",
+                    borderBottom: "none",
+                    background:
+                      "linear-gradient(180deg, rgba(15,76,117,0.06), rgba(15,76,117,0.02))",
+                  },
+                }}
+              >
+                {[
+                  "Tourist ID",
+                  "Created At",
+                  "Digital ID",
+                  "Document Number",
+                  "Document Type",
+                  "Email",
+                  "Emergency Contacts",
+                  "Full Name",
+                  "Active",
+                  "Verified",
+                  "Start Date",
+                  "End Date",
+                ].map((h) => (
+                  <TableCell key={h} sx={{ py: 1.25 }}>
+                    {h}
+                  </TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+
+            <tbody>
+              {userData.map((u) => (
+                <TableRow
+                  key={u.touristId}
+                  hover
+                  sx={{
+                    backgroundColor: "#fff",
+                    "&:nth-of-type(odd)": { backgroundColor: "#fbfdff" },
+                    "&:hover": {
+                      transform: "translateY(-1px)",
+                      boxShadow: "0 8px 20px rgba(20,35,52,0.05)",
+                    },
+                    transition: "all 200ms ease",
+                  }}
+                >
+                  <TableCell>{u.touristId}</TableCell>
+                  <TableCell>{u.createdAt}</TableCell>
+                  <TableCell>{u.digitalId}</TableCell>
+                  <TableCell>{u.documentNumber}</TableCell>
+                  <TableCell>{u.documentType}</TableCell>
+                  <TableCell>{u.email}</TableCell>
+                  <TableCell>{u.emergencyContacts}</TableCell>
+                  <TableCell>{u.fullName}</TableCell>
+                  <TableCell>{u.isActive ? "Yes" : "No"}</TableCell>
+                  <TableCell>{u.isVerified ? "Yes" : "No"}</TableCell>
+                  <TableCell>{u.startDate}</TableCell>
+                  <TableCell>{u.endDate}</TableCell>
+                </TableRow>
+              ))}
+            </tbody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 2,
+          overflow: "hidden",
+          border: "1px solid rgba(15,76,117,0.08)",
+          boxShadow: "0 8px 28px rgba(20,35,52,0.06)",
+        }}
+      >
+        <Box sx={{ p: 2 }}>
+          <Typography sx={{ color: "primary.dark", fontWeight: 700 }}>
+            Heat Map — NorthEast India
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            High-level activity visualization across NE region
+          </Typography>
+        </Box>
+        <Box sx={{ height: 380 }}>
+          <MapContainer
+            center={[26.5, 92.5]}
+            zoom={6}
+            style={{ height: "100%", width: "100%" }}
+            scrollWheelZoom={false}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="&copy; OpenStreetMap contributors"
+            />
+            <Rectangle
+              bounds={[
+                [24.0, 88.0],
+                [28.5, 96.0],
+              ]}
+              pathOptions={{ color: "#d64545", weight: 2, fillOpacity: 0.1 }}
+            />
+          </MapContainer>
+        </Box>
+      </Paper>
+    </Box>
+  );
+};
+
+// Main Dashboard
+const AuthorityDashboard: React.FC = () => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [currentSection, setCurrentSection] = useState<Section>("overview");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
+  const [notifAnchorEl, setNotifAnchorEl] = useState<null | HTMLElement>(null);
+  const [alertCounts, setAlertCounts] = useState({ complaints: 3, sos: 1, emergency: 2 });
+  const lgUp = useMediaQuery("(min-width:1200px)");
 
+  const totalAlerts =
+    alertCounts.complaints + alertCounts.sos + alertCounts.emergency;
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAlertCounts({
+        complaints: Math.floor(Math.random() * 10) + 1,
+        sos: Math.floor(Math.random() * 5),
+        emergency: Math.floor(Math.random() * 3),
+      });
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
   const handleMenuOpen = (e: React.MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
+  const handleNotifClick = (e: React.MouseEvent<HTMLElement>) => setNotifAnchorEl(e.currentTarget);
+  const handleNotifClose = () => setNotifAnchorEl(null);
 
-  return (
-    <AppBar position="sticky" color="primary" enableColorOnDark>
-      <Toolbar>
-        <PersonIcon sx={{ mr: 1 }} aria-hidden="true" />
-        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          Smart Tourist Safety Monitoring - Welcome, {userName}
-        </Typography>
-        <Tooltip title="Profile & Settings">
-          <IconButton
-            color="inherit"
-            onClick={handleMenuOpen}
-            aria-controls={open ? "profile-menu" : undefined}
-            aria-haspopup="true"
-            aria-expanded={open ? "true" : undefined}
-            aria-label="Open profile menu"
-            size="large"
-          >
-            <SettingsIcon />
-          </IconButton>
-        </Tooltip>
-        <Menu
-          id="profile-menu"
-          anchorEl={anchorEl}
-          open={open}
-          onClose={handleMenuClose}
-          MenuListProps={{ "aria-labelledby": "profile-button" }}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <MenuItem onClick={handleMenuClose}>Settings</MenuItem>
-          <MenuItem
-            onClick={() => {
-              handleMenuClose();
-              onLogout();
-            }}
-          >
-            Logout
-          </MenuItem>
-        </Menu>
-      </Toolbar>
-    </AppBar>
-  );
-};
-
-// Heatmap Component (using Leaflet CircleMarkers as placeholders)
-
-
-
-
-// Digital Tourist ID Records Table
-const TouristIDRecords: React.FC = () => {
-  const [search, setSearch] = useState("");
-  const [filterNationality, setFilterNationality] = useState("");
-
-  const tourists: TouristID[] = [
-    {
-      id: "T-001",
-      name: "Alice Johnson",
-      nationality: "USA",
-      kycStatus: "Verified",
-      tripItinerary: "NYC - Boston - Miami",
-      validUntil: "2024-12-31",
-    },
-    {
-      id: "T-002",
-      name: "Mohamed Ali",
-      nationality: "Egypt",
-      kycStatus: "Pending",
-      tripItinerary: "Cairo - Luxor",
-      validUntil: "2024-08-15",
-    },
-    {
-      id: "T-003",
-      name: "Sofia Rossi",
-      nationality: "Italy",
-      kycStatus: "Verified",
-      tripItinerary: "Rome - Venice",
-      validUntil: "2024-09-30",
-    },
-  ];
-
-  const filtered = useMemo(() => {
-    return tourists.filter(
-      (t) =>
-        t.name.toLowerCase().includes(search.toLowerCase()) &&
-        (filterNationality ? t.nationality === filterNationality : true)
-    );
-  }, [search, filterNationality]);
-
-  const nationalities = Array.from(new Set(tourists.map((t) => t.nationality)));
-
-  return (
-    <Paper sx={{ p: 2, mb: 2 }} aria-label="Digital Tourist ID Records">
-      <Typography variant="h6" gutterBottom>
-        Digital Tourist ID Records
-      </Typography>
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        sx={{ mb: 2 }}
-        alignItems="center"
-      >
-        <TextField
-          label="Search by Name"
-          variant="outlined"
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end" aria-hidden="true">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          aria-label="Search tourists by name"
-        />
-        <TextField
-          select
-          label="Filter by Nationality"
-          size="small"
-          value={filterNationality}
-          onChange={(e) => setFilterNationality(e.target.value)}
-          sx={{ minWidth: 180 }}
-          aria-label="Filter tourists by nationality"
-        >
-          <MenuItem value="">All</MenuItem>
-          {nationalities.map((nat) => (
-            <MenuItem key={nat} value={nat}>
-              {nat}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Stack>
-      <TableContainer sx={{ maxHeight: 300 }}>
-        <Table stickyHeader size="small" aria-label="Tourist ID records table">
-          <TableHead>
-            <TableRow>
-              <TableCell>ID</TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Nationality</TableCell>
-              <TableCell>KYC Status</TableCell>
-              <TableCell>Trip Itinerary</TableCell>
-              <TableCell>Valid Until</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filtered.map(({ id, name, nationality, kycStatus, tripItinerary, validUntil }) => (
-              <TableRow key={id} hover tabIndex={-1}>
-                <TableCell>{id}</TableCell>
-                <TableCell>{name}</TableCell>
-                <TableCell>{nationality}</TableCell>
-                <TableCell>{kycStatus}</TableCell>
-                <TableCell>{tripItinerary}</TableCell>
-                <TableCell>{validUntil}</TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  No records found.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Paper>
-  );
-};
-
-// Alert and Incident History Panel
-const AlertIncidentHistory: React.FC = () => {
-  const [filterType, setFilterType] = useState("");
-  const [filterUrgency, setFilterUrgency] = useState("");
-
-  const alerts: AlertIncident[] = [
-    {
-      id: "A-1001",
-      type: "Geo-fencing Alert",
-      urgency: "High",
-      status: "Open",
-      assignedTo: "Unit 12",
-      date: "2024-06-10",
-    },
-    {
-      id: "A-1002",
-      type: "Panic Button Activation",
-      urgency: "Critical",
-      status: "Assigned",
-      assignedTo: "Unit 5",
-      date: "2024-06-09",
-    },
-    {
-      id: "A-1003",
-      type: "AI Anomaly Flag",
-      urgency: "Medium",
-      status: "Resolved",
-      assignedTo: "Unit 3",
-      date: "2024-06-08",
-    },
-  ];
-
-  const filtered = useMemo(() => {
-    return alerts.filter(
-      (a) =>
-        (filterType ? a.type === filterType : true) &&
-        (filterUrgency ? a.urgency === filterUrgency : true)
-    );
-  }, [filterType, filterUrgency]);
-
-  const alertTypes = Array.from(new Set(alerts.map((a) => a.type)));
-  const urgencies = Array.from(new Set(alerts.map((a) => a.urgency)));
-
-  // Placeholder handlers
-  const assignCase = (id: string) => {
-    // TODO: Integrate backend API to assign/reassign case
-    alert(`Assign/Reassign case ${id} clicked`);
+  const handleSectionChange = (id: Section) => {
+    setCurrentSection(id);
+    if (mobileOpen) setMobileOpen(false);
+    if (sidebarCollapsed && lgUp) setSidebarCollapsed(false);
   };
 
-  return (
-    <Paper sx={{ p: 2, mb: 2 }} aria-label="Alert and Incident History">
-      <Typography variant="h6" gutterBottom>
-        Alert and Incident History
-      </Typography>
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={2}
-        sx={{ mb: 2 }}
-        alignItems="center"
+  const CollapsedToggle: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+    <Box
+      sx={{
+        position: "fixed",
+        top: 16,
+        left: 12,
+        zIndex: (t) => t.zIndex.drawer + 3,
+      }}
+    >
+      <IconButton
+        onClick={onClick}
+        size="small"
+        sx={{
+          bgcolor: "rgba(255,255,255,0.92)",
+          border: "1px solid rgba(15,76,117,0.12)",
+          boxShadow: "0 6px 16px rgba(0,0,0,0.08)",
+          "&:hover": { bgcolor: "white" },
+          color: "primary.main",
+        }}
+        aria-label="Expand sidebar"
       >
-        <TextField
-          select
-          label="Filter by Alert Type"
-          size="small"
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          sx={{ minWidth: 180 }}
-          aria-label="Filter alerts by type"
-        >
-          <MenuItem value="">All</MenuItem>
-          {alertTypes.map((type) => (
-            <MenuItem key={type} value={type}>
-              {type}
-            </MenuItem>
-          ))}
-        </TextField>
-        <TextField
-          select
-          label="Filter by Urgency"
-          size="small"
-          value={filterUrgency}
-          onChange={(e) => setFilterUrgency(e.target.value)}
-          sx={{ minWidth: 140 }}
-          aria-label="Filter alerts by urgency"
-        >
-          <MenuItem value="">All</MenuItem>
-          {urgencies.map((urgency) => (
-            <MenuItem key={urgency} value={urgency}>
-              {urgency}
-            </MenuItem>
-          ))}
-        </TextField>
-      </Stack>
-      <List dense sx={{ maxHeight: 300, overflowY: "auto" }}>
-        {filtered.map(({ id, type, urgency, status, assignedTo, date }) => (
-          <ListItem
-            key={id}
-            secondaryAction={
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => assignCase(id)}
-                aria-label={`Assign or reassign case ${id}`}
-              >
-                Assign/Reassign
-              </Button>
-            }
-            divider
-          >
-            <ListItemText
-              primary={`${type} (${urgency} urgency) - ${status}`}
-              secondary={`Date: ${date} | Assigned to: ${assignedTo ?? "Unassigned"}`}
-            />
-          </ListItem>
-        ))}
-        {filtered.length === 0 && (
-          <Typography variant="body2" align="center" sx={{ mt: 2 }}>
-            No alerts found.
-          </Typography>
-        )}
-      </List>
-      <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-        <Button
-          variant="contained"
-          startIcon={<AddAlertIcon />}
-          onClick={() => alert("Add Alert clicked")}
-          aria-label="Add alert or incident"
-        >
-          Add Alert/Incident
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={<AssignmentIndIcon />}
-          onClick={() => alert("Generate E-FIR clicked")}
-          aria-label="Generate automated E-FIR"
-        >
-          Generate E-FIR
-        </Button>
-      </Stack>
-    </Paper>
-  );
-};
-
-// Notifications Panel
-const NotificationsPanel: React.FC = () => {
-  const notifications: Notification[] = [
-    {
-      id: "N-001",
-      message: "System maintenance scheduled for 2024-06-15",
-      date: "2024-06-10",
-      critical: false,
-    },
-    {
-      id: "N-002",
-      message: "New high-risk zone detected near Central Park",
-      date: "2024-06-09",
-      critical: true,
-    },
-    {
-      id: "N-003",
-      message: "User  'Officer Smith' updated case A-1002",
-      date: "2024-06-08",
-      critical: false,
-    },
-  ];
-
-  return (
-    <Paper sx={{ p: 2 }} aria-label="Notifications panel">
-      <Typography variant="h6" gutterBottom>
-        Notifications
-      </Typography>
-      <List dense>
-        {notifications.map(({ id, message, date, critical }) => (
-          <ListItem
-            key={id}
-            sx={{ bgcolor: critical ? "error.light" : "inherit" }}
-            divider
-          >
-            <ListItemText
-              primary={message}
-              secondary={date}
-              primaryTypographyProps={{
-                color: critical ? "error.main" : "textPrimary",
-                fontWeight: critical ? "bold" : "normal",
-              }}
-            />
-          </ListItem>
-        ))}
-      </List>
-    </Paper>
-  );
-};
-
-// Main Authority Dashboard Component
-const AuthorityDashboard: React.FC<{ userName: string; onLogout: () => void }> = ({
-  userName,
-  onLogout,
-}) => {
-  // Mock stats
-  const totalTourists = 1280;
-  const activeAlerts = 24;
-  const resolvedIncidents = 1150;
-
-
-
-  return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
-      <Header userName={userName} onLogout={onLogout} />
-      <Container maxWidth="xl" sx={{ py: 3 }}>
-        {/* Stats Overview */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={4}>
-            <StatCard
-              title="Tourists Monitored"
-              value={totalTourists}
-              icon={<PersonIcon fontSize="inherit" />}
-              tooltip="Total number of tourists currently monitored"
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <StatCard
-              title="Active Safety Alerts"
-              value={activeAlerts}
-              icon={<ReportProblemIcon fontSize="inherit" />}
-              tooltip="Number of active safety alerts"
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <StatCard
-              title="Resolved Incidents"
-              value={resolvedIncidents}
-              icon={<CheckCircleIcon fontSize="inherit" />}
-              tooltip="Number of resolved/closed incidents"
-            />
-          </Grid>
-        </Grid>
-
-        {/* Heatmap */}
-        <Typography variant="h6" gutterBottom>
-          Tourist Clusters & High-Risk Zones
-        </Typography>
-        
-
-        {/* Digital Tourist ID Records */}
-        <TouristIDRecords />
-
-        {/* Alert and Incident History */}
-        <AlertIncidentHistory />
-
-        {/* Notifications */}
-        <NotificationsPanel />
-      </Container>
+        <ChevronRightIcon />
+      </IconButton>
     </Box>
+  );
+
+  // Drawer content — render only when expanded
+  const drawer = !sidebarCollapsed ? (
+    <Box
+      sx={{
+        height: "100vh",
+        width: drawerWidthExpanded,
+        display: "flex",
+        flexDirection: "column",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(245,250,255,0.64))",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        borderRight: "1px solid rgba(15,76,117,0.06)",
+        overflow: "hidden",
+        boxSizing: "border-box",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          px: 1.5,
+          py: 1.25,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "linear-gradient(135deg,#2b9bd6,#0f6fb1)",
+              color: "#fff",
+              fontWeight: 800,
+              boxShadow: "0 6px 18px rgba(15,76,117,0.12)",
+            }}
+          >
+            GG
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "primary.dark" }}>
+              Geo Guardian
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              Operations Console
+            </Typography>
+          </Box>
+        </Box>
+
+        <IconButton
+          onClick={() => setSidebarCollapsed(true)}
+          sx={{
+            color: "primary.main",
+            background: "rgba(15,76,117,0.06)",
+            "&:hover": { background: "rgba(15,76,117,0.1)" },
+          }}
+          aria-label="Collapse sidebar"
+        >
+          <ChevronLeftIcon />
+        </IconButton>
+      </Box>
+
+      <Divider sx={{ opacity: 0.6 }} />
+
+      <List sx={{ flexGrow: 1, px: 1.5, py: 1.5 }}>
+        {sections.map(({ id, label, icon }) => {
+          const selected = currentSection === id;
+          return (
+            <ListItemButton
+              key={id}
+              selected={selected}
+              onClick={() => handleSectionChange(id)}
+              sx={{
+                borderRadius: 2,
+                mb: 0.75,
+                minHeight: 52,
+                "&.Mui-selected": {
+                  bgcolor: "rgba(43,155,214,0.12)",
+                  color: "primary.main",
+                  "& svg": { color: "primary.main" },
+                },
+                "&:hover": { background: "rgba(15,76,117,0.06)" },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 44,
+                  color: selected ? "primary.main" : "text.secondary",
+                }}
+              >
+                {icon}
+              </ListItemIcon>
+              <ListItemText
+                primaryTypographyProps={{ fontWeight: selected ? 700 : 600, fontSize: 14 }}
+                primary={label}
+              />
+            </ListItemButton>
+          );
+        })}
+      </List>
+
+      <Divider sx={{ opacity: 0.6 }} />
+      <Box sx={{ p: 1.5 }}>
+        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+          Version 1.3 • Secure
+        </Typography>
+      </Box>
+    </Box>
+  ) : null;
+
+  const renderContent = () => {
+    switch (currentSection) {
+      case "overview":
+        return <OverviewSection />;
+      case "alerts":
+        return <AlertManagementSection />;
+      case "cases":
+        return <CaseFIRManagementSection />;
+      case "response":
+        return <EmergencyResponseCoordinationSection />;
+      case "tourists":
+        return <TouristMonitoringSafetySection />;
+      case "users":
+        return <UserRoleManagementSection />;
+      case "settings":
+        return <SystemSettingsNotificationsSection />;
+      case "reports":
+        return (
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+              Reports & Analytics
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Add charts and KPIs here using your analytics sources
+            </Typography>
+          </Box>
+        );
+      default:
+        return <Typography>Section not found</Typography>;
+    }
+  };
+
+  const currentLabel = sections.find((s) => s.id === currentSection)?.label || "Dashboard";
+
+  return (
+    <ThemeProvider theme={theme}>
+      <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "background.default" }}>
+        <CssBaseline />
+
+        {/* App Bar */}
+        <AppBar
+          position="fixed"
+          elevation={0}
+          sx={{
+            width: {
+              xs: "100%",
+              lg: `calc(100% - ${sidebarCollapsed ? 0 : drawerWidthExpanded}px)`,
+            },
+            ml: { xs: 0, lg: `${sidebarCollapsed ? 0 : drawerWidthExpanded}px` },
+            bgcolor: "rgba(255,255,255,0.7)",
+            color: "text.primary",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            borderBottom: "1px solid rgba(15,76,117,0.08)",
+            zIndex: (t) => t.zIndex.drawer + 2,
+            transition: "width 0.28s ease, margin-left 0.28s ease",
+          }}
+        >
+          <Toolbar sx={{ justifyContent: "space-between", minHeight: 68 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexGrow: 1 }}>
+              <IconButton
+                color="inherit"
+                edge="start"
+                onClick={handleDrawerToggle}
+                sx={{
+                  mr: 1,
+                  display: { lg: "none" },
+                  background: "rgba(15,76,117,0.06)",
+                  "&:hover": { background: "rgba(15,76,117,0.1)" },
+                }}
+              >
+                <MenuIcon />
+              </IconButton>
+
+              <Box
+                component="img"
+                src="/geo-guardian.png"
+                alt="Geo Guardian"
+                sx={{ height: 40, width: "auto", display: { xs: "none", sm: "block" } }}
+              />
+
+              <Box sx={{ minWidth: 200 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  {currentLabel}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  Authority Dashboard
+                </Typography>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0 }}>
+              <Tooltip title="Notifications">
+                <IconButton color="inherit" onClick={handleNotifClick}>
+                  <Badge badgeContent={totalAlerts} color="error">
+                    <NotificationsActiveOutlinedIcon />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+
+              <Menu
+                anchorEl={notifAnchorEl}
+                open={Boolean(notifAnchorEl)}
+                onClose={handleNotifClose}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+              >
+                <MenuItem>Complaints: {alertCounts.complaints}</MenuItem>
+                <MenuItem>SOS: {alertCounts.sos}</MenuItem>
+                <MenuItem>Emergencies: {alertCounts.emergency}</MenuItem>
+              </Menu>
+
+              <Tooltip title="Account">
+                <IconButton color="inherit" onClick={handleMenuOpen} sx={{ ml: 0.5 }}>
+                  <Avatar sx={{ width: 34, height: 34, fontSize: 14 }}>AG</Avatar>
+                </IconButton>
+              </Tooltip>
+
+              <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+                <MenuItem>Profile</MenuItem>
+                <MenuItem>Settings</MenuItem>
+                <MenuItem>
+                  <LogoutIcon sx={{ mr: 1 }} /> Logout
+                </MenuItem>
+              </Menu>
+            </Box>
+          </Toolbar>
+        </AppBar>
+
+        {/* Desktop Drawer only when expanded */}
+        {!sidebarCollapsed && (
+          <Drawer
+            variant="permanent"
+            sx={{
+              display: { xs: "none", lg: "block" },
+              width: drawerWidthExpanded,
+              flexShrink: 0,
+              "& .MuiDrawer-paper": {
+                width: drawerWidthExpanded,
+                boxSizing: "border-box",
+                border: "none",
+              },
+            }}
+            open
+          >
+            {drawer}
+          </Drawer>
+        )}
+
+        {/* Mobile Drawer respects collapsed */}
+        <Drawer
+          variant="temporary"
+          open={!sidebarCollapsed && mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            display: { xs: "block", lg: "none" },
+            "& .MuiDrawer-paper": {
+              width: drawerWidthExpanded,
+              boxSizing: "border-box",
+              border: "none",
+            },
+          }}
+        >
+          {drawer}
+        </Drawer>
+
+        {/* Floating unhide chevron only when collapsed */}
+        {sidebarCollapsed && (
+          <CollapsedToggle onClick={() => setSidebarCollapsed(false)} />
+        )}
+
+        {/* Main Content */}
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            p: { xs: 2, sm: 3 },
+            pt: { xs: 9, sm: 10 },
+            transition: "margin-left 0.0 ease",
+            //ml: { xs: 0, lg: `${sidebarCollapsed ? 0 : drawerWidthExpanded}px` },
+            maxWidth: "100%",
+          }}
+        >
+          {renderContent()}
+        </Box>
+      </Box>
+    </ThemeProvider>
   );
 };
 
