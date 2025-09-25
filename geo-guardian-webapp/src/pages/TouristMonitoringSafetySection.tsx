@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Typography,
   Paper,
-  TableContainer,
   Table,
   TableHead,
   TableRow,
@@ -28,7 +27,7 @@ const aiAlerts = [
   { id: "RISK-002", description: "Unauthorized crossing of safety boundary", severity: "Medium", timestamp: "2025-09-23 08:30" },
 ];
 
-const severityColors = {
+const severityColors: Record<string, "error" | "warning" | "default"> = {
   High: "error",
   Medium: "warning",
   Low: "default"

@@ -1,7 +1,7 @@
 // src/App.tsx
 import React, { useState } from "react";
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
 
 
 type AuthorityDashboardProps = {
@@ -65,9 +65,9 @@ const LandingPage: React.FC = () => {
             Search
           </button>
             
-          <a href="/login" className="gg-btn">
+            <Link to="/login" className="gg-btn">
             Login
-          </a>
+            </Link>
           {/* New buttons to preview dashboards without login */}
           
         </div>

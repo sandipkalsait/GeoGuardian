@@ -190,9 +190,11 @@ const CaseFIRManagementSection: React.FC = () => {
     setComplaintRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: s } : r)));
   };
 
-  // Existing action stubs
+  // Existing action stubs remain
+  // const viewEfir = (no: string) => alert(`View FIR ${no}`);
   const editEfir = (no: string) => alert(`Edit FIR ${no}`);
   const downloadEfir = (no: string) => alert(`Download FIR ${no}`);
+  // const viewComplaint = (id: string) => alert(`View Complaint ${id}`);
   const linkToCase = (id: string) => alert(`Link Complaint ${id} → Case`);
   const closeComplaint = (id: string) =>
     setComplaintRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: "Closed" } : r)));

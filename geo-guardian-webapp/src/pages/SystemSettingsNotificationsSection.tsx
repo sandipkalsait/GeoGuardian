@@ -27,14 +27,12 @@ const SystemSettingsNotificationsSection: React.FC = () => {
     emergencyServicesApi: "",
   });
 
-  const handleNotificationToggle = (name: NotificationKey) => {
+  const handleNotificationToggle = (name: keyof typeof notifications) => {
     setNotifications((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
-  const handleIntegrationChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = event.target as { name: keyof typeof integrationUrls; value: string };
+  const handleIntegrationChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
     setIntegrationUrls((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -63,7 +61,7 @@ const SystemSettingsNotificationsSection: React.FC = () => {
               step={1}
               marks
               valueLabelDisplay="auto"
-              onChange={(_, value) => setAlertThreshold(value as number)}
+              onChange={(_, value) => setAlertThreshold(Array.isArray(value) ? value[0] : value)}
             />
           </Card>
         </Grid>

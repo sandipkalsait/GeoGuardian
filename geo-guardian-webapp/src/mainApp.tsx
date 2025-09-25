@@ -190,7 +190,7 @@ const App: React.FC = () => {
               <Navigate to="/login" replace />
             )
           }
-        />        
+        />
 
         {/* Catch all - redirect to root */}
         <Route path="*" element={<Navigate to="/" replace />} />

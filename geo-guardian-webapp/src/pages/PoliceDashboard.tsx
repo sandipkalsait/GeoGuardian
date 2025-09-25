@@ -323,8 +323,8 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
               </Typography>
               <List>
                 {incidents
-                  .slice()
-                  .sort((a, b) => (a.status === "unassigned" ? -1 : 1))
+                    .slice()
+                    .sort((a, _b) => (a.status === "unassigned" ? -1 : 1))
                   .map((inc) => (
                     <ListItemButton key={inc.id} onClick={() => handleOpenIncident(inc)} sx={{ mb: 1 }}>
                       <ListItemText
