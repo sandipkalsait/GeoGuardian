@@ -4,6 +4,11 @@ import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 
+type AuthorityDashboardProps = {
+  userName: string;
+  onLogout: () => void;
+};
+
 import Logo from "/geo-guardian.png";
 import data from "./assets/data.json";
 import "./App.css";
@@ -14,15 +19,14 @@ import AuthorityDashboard from "./pages/AuthorityDashboard";
 import PoliceDashboard from "./pages/PoliceDashboard";
 import TouristPage from "./pages/tourist";
 
+const AuthorityDashboardElement: React.FC<AuthorityDashboardProps> = (props) => (
+  <AuthorityDashboard {...props} />
+);
 
 const complaintData = [
   { id: "C1234", name: "Lost Wallet" },
   { id: "C1235", name: "Unauthorized Access" },
 ];
-
-
-  // Modal state
- 
 
 // Landing page component (your original App UI)
 const LandingPage: React.FC = () => {

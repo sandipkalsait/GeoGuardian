@@ -1,6 +1,17 @@
 // AuthorityDashboard.tsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+
+// Maps
+import { MapContainer, TileLayer, Rectangle } from "react-leaflet";
+import type { LatLngExpression, LatLngBoundsExpression } from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+export type AuthorityDashboardProps = {
+  userName: string;
+  onLogout: () => void;
+};
+
 import {
   AppBar,
   Toolbar,
@@ -30,7 +41,9 @@ import {
   useMediaQuery,
   ThemeProvider,
   createTheme,
+  Button,
 } from "@mui/material";
+
 import SearchIcon from "@mui/icons-material/Search";
 import MenuIcon from "@mui/icons-material/Menu";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -45,10 +58,6 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import LogoutIcon from "@mui/icons-material/Logout";
 import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsActiveOutlined";
-import Button from "@mui/material/Button";
-
-import { MapContainer, TileLayer, Rectangle } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
 
 import AlertManagementSection from "./AlertManagementSection";
 import CaseFIRManagementSection from "./CaseFIRManagementSection ";
@@ -72,16 +81,13 @@ const theme = createTheme({
   },
   shape: { borderRadius: 12 },
   typography: {
-    fontFamily:
-      "'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
+    fontFamily: "'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif",
     button: { textTransform: "none", fontWeight: 600 },
   },
   components: {
     MuiPaper: { styleOverrides: { rounded: { borderRadius: 12 } } },
   },
 });
-
-// Fully hidden when collapsed
 
 const drawerWidthExpanded = 288;
 
@@ -140,21 +146,20 @@ const userData = [
   },
 ];
 
+// Map constants (typed)
+const mapCenter: LatLngExpression = [26.5, 92.5];
+const heatBounds: LatLngBoundsExpression = [
+  [24.0, 88.0],
+  [28.5, 96.0],
+];
+
 // Overview
 const OverviewSection: React.FC = () => {
   const navigate = useNavigate();
 
   return (
     <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 2,
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-        }}
-      >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, justifyContent: "space-between", flexWrap: "wrap" }}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: 0.2 }}>
             User Records
@@ -183,27 +188,13 @@ const OverviewSection: React.FC = () => {
               ),
             }}
           />
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate("/tourist")}
-            sx={{ px: 2.25 }}
-          >
+          <Button variant="contained" color="primary" onClick={() => navigate("/tourist")} sx={{ px: 2.25 }}>
             Open Tourist
           </Button>
         </Box>
       </Box>
 
-      <Paper
-        elevation={0}
-        sx={{
-          p: 0,
-          borderRadius: 2,
-          overflow: "hidden",
-          border: "1px solid rgba(15,76,117,0.08)",
-          boxShadow: "0 8px 28px rgba(20,35,52,0.06)",
-        }}
-      >
+      <Paper elevation={0} sx={{ p: 0, borderRadius: 2, overflow: "hidden", border: "1px solid rgba(15,76,117,0.08)", boxShadow: "0 8px 28px rgba(20,35,52,0.06)" }}>
         <TableContainer sx={{ maxHeight: 420 }}>
           <Table stickyHeader size="small">
             <TableHead>
@@ -213,8 +204,7 @@ const OverviewSection: React.FC = () => {
                     fontWeight: 700,
                     color: "primary.dark",
                     borderBottom: "none",
-                    background:
-                      "linear-gradient(180deg, rgba(15,76,117,0.06), rgba(15,76,117,0.02))",
+                    background: "linear-gradient(180deg, rgba(15,76,117,0.06), rgba(15,76,117,0.02))",
                   },
                 }}
               >
@@ -247,10 +237,7 @@ const OverviewSection: React.FC = () => {
                   sx={{
                     backgroundColor: "#fff",
                     "&:nth-of-type(odd)": { backgroundColor: "#fbfdff" },
-                    "&:hover": {
-                      transform: "translateY(-1px)",
-                      boxShadow: "0 8px 20px rgba(20,35,52,0.05)",
-                    },
+                    "&:hover": { transform: "translateY(-1px)", boxShadow: "0 8px 20px rgba(20,35,52,0.05)" },
                     transition: "all 200ms ease",
                   }}
                 >
@@ -273,15 +260,7 @@ const OverviewSection: React.FC = () => {
         </TableContainer>
       </Paper>
 
-      <Paper
-        elevation={0}
-        sx={{
-          borderRadius: 2,
-          overflow: "hidden",
-          border: "1px solid rgba(15,76,117,0.08)",
-          boxShadow: "0 8px 28px rgba(20,35,52,0.06)",
-        }}
-      >
+      <Paper elevation={0} sx={{ borderRadius: 2, overflow: "hidden", border: "1px solid rgba(15,76,117,0.08)", boxShadow: "0 8px 28px rgba(20,35,52,0.06)" }}>
         <Box sx={{ p: 2 }}>
           <Typography sx={{ color: "primary.dark", fontWeight: 700 }}>
             Heat Map — NorthEast India
@@ -291,24 +270,30 @@ const OverviewSection: React.FC = () => {
           </Typography>
         </Box>
         <Box sx={{ height: 380 }}>
+          {/* If TS still complains in your environment due to mismatched deps, add `as any` casts shown below */}
           <MapContainer
-            center={[26.5, 92.5]}
+            center={mapCenter}
             zoom={6}
             style={{ height: "100%", width: "100%" }}
             scrollWheelZoom={false}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution="&copy; OpenStreetMap contributors"
+              attribution="© OpenStreetMap contributors"
             />
             <Rectangle
-              bounds={[
-                [24.0, 88.0],
-                [28.5, 96.0],
-              ]}
+              bounds={heatBounds}
               pathOptions={{ color: "#d64545", weight: 2, fillOpacity: 0.1 }}
             />
           </MapContainer>
+
+          {/*
+          Fallback cast (only if needed):
+          <MapContainer {...({ center: mapCenter, zoom: 6, style: { height: "100%", width: "100%" }, scrollWheelZoom: false } as any)}>
+            <TileLayer {...({ url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", attribution: "© OpenStreetMap contributors" } as any)} />
+            <Rectangle {...({ bounds: heatBounds, pathOptions: { color: "#d64545", weight: 2, fillOpacity: 0.1 } } as any)} />
+          </MapContainer>
+          */}
         </Box>
       </Paper>
     </Box>
@@ -316,7 +301,7 @@ const OverviewSection: React.FC = () => {
 };
 
 // Main Dashboard
-const AuthorityDashboard: React.FC = () => {
+const AuthorityDashboard: React.FC<AuthorityDashboardProps> = ({ userName, onLogout }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentSection, setCurrentSection] = useState<Section>("overview");
@@ -325,8 +310,7 @@ const AuthorityDashboard: React.FC = () => {
   const [alertCounts, setAlertCounts] = useState({ complaints: 3, sos: 1, emergency: 2 });
   const lgUp = useMediaQuery("(min-width:1200px)");
 
-  const totalAlerts =
-    alertCounts.complaints + alertCounts.sos + alertCounts.emergency;
+  const totalAlerts = alertCounts.complaints + alertCounts.sos + alertCounts.emergency;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -352,14 +336,7 @@ const AuthorityDashboard: React.FC = () => {
   };
 
   const CollapsedToggle: React.FC<{ onClick: () => void }> = ({ onClick }) => (
-    <Box
-      sx={{
-        position: "fixed",
-        top: 16,
-        left: 12,
-        zIndex: (t) => t.zIndex.drawer + 3,
-      }}
-    >
+    <Box sx={{ position: "fixed", top: 16, left: 12, zIndex: (t) => t.zIndex.drawer + 3 }}>
       <IconButton
         onClick={onClick}
         size="small"
@@ -377,7 +354,6 @@ const AuthorityDashboard: React.FC = () => {
     </Box>
   );
 
-  // Drawer content — render only when expanded
   const drawer = !sidebarCollapsed ? (
     <Box
       sx={{
@@ -385,8 +361,7 @@ const AuthorityDashboard: React.FC = () => {
         width: drawerWidthExpanded,
         display: "flex",
         flexDirection: "column",
-        background:
-          "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(245,250,255,0.64))",
+        background: "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(245,250,255,0.64))",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
         borderRight: "1px solid rgba(15,76,117,0.06)",
@@ -394,15 +369,7 @@ const AuthorityDashboard: React.FC = () => {
         boxSizing: "border-box",
       }}
     >
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          px: 1.5,
-          py: 1.25,
-        }}
-      >
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1.5, py: 1.25 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
           <Box
             sx={{
@@ -432,11 +399,7 @@ const AuthorityDashboard: React.FC = () => {
 
         <IconButton
           onClick={() => setSidebarCollapsed(true)}
-          sx={{
-            color: "primary.main",
-            background: "rgba(15,76,117,0.06)",
-            "&:hover": { background: "rgba(15,76,117,0.1)" },
-          }}
+          sx={{ color: "primary.main", background: "rgba(15,76,117,0.06)", "&:hover": { background: "rgba(15,76,117,0.1)" } }}
           aria-label="Collapse sidebar"
         >
           <ChevronLeftIcon />
@@ -465,18 +428,10 @@ const AuthorityDashboard: React.FC = () => {
                 "&:hover": { background: "rgba(15,76,117,0.06)" },
               }}
             >
-              <ListItemIcon
-                sx={{
-                  minWidth: 44,
-                  color: selected ? "primary.main" : "text.secondary",
-                }}
-              >
+              <ListItemIcon sx={{ minWidth: 44, color: selected ? "primary.main" : "text.secondary" }}>
                 {icon}
               </ListItemIcon>
-              <ListItemText
-                primaryTypographyProps={{ fontWeight: selected ? 700 : 600, fontSize: 14 }}
-                primary={label}
-              />
+              <ListItemText primaryTypographyProps={{ fontWeight: selected ? 700 : 600, fontSize: 14 }} primary={label} />
             </ListItemButton>
           );
         })}
@@ -535,10 +490,7 @@ const AuthorityDashboard: React.FC = () => {
           position="fixed"
           elevation={0}
           sx={{
-            width: {
-              xs: "100%",
-              lg: `calc(100% - ${sidebarCollapsed ? 0 : drawerWidthExpanded}px)`,
-            },
+            width: { xs: "100%", lg: `calc(100% - ${sidebarCollapsed ? 0 : drawerWidthExpanded}px)` },
             ml: { xs: 0, lg: `${sidebarCollapsed ? 0 : drawerWidthExpanded}px` },
             bgcolor: "rgba(255,255,255,0.7)",
             color: "text.primary",
@@ -555,22 +507,12 @@ const AuthorityDashboard: React.FC = () => {
                 color="inherit"
                 edge="start"
                 onClick={handleDrawerToggle}
-                sx={{
-                  mr: 1,
-                  display: { lg: "none" },
-                  background: "rgba(15,76,117,0.06)",
-                  "&:hover": { background: "rgba(15,76,117,0.1)" },
-                }}
+                sx={{ mr: 1, display: { lg: "none" }, background: "rgba(15,76,117,0.06)", "&:hover": { background: "rgba(15,76,117,0.1)" } }}
               >
                 <MenuIcon />
               </IconButton>
 
-              <Box
-                component="img"
-                src="/geo-guardian.png"
-                alt="Geo Guardian"
-                sx={{ height: 40, width: "auto", display: { xs: "none", sm: "block" } }}
-              />
+              <Box component="img" src="/geo-guardian.png" alt="Geo Guardian" sx={{ height: 40, width: "auto", display: { xs: "none", sm: "block" } }} />
 
               <Box sx={{ minWidth: 200 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
@@ -612,7 +554,7 @@ const AuthorityDashboard: React.FC = () => {
               <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
                 <MenuItem>Profile</MenuItem>
                 <MenuItem>Settings</MenuItem>
-                <MenuItem>
+                <MenuItem onClick={onLogout}>
                   <LogoutIcon sx={{ mr: 1 }} /> Logout
                 </MenuItem>
               </Menu>
@@ -628,11 +570,7 @@ const AuthorityDashboard: React.FC = () => {
               display: { xs: "none", lg: "block" },
               width: drawerWidthExpanded,
               flexShrink: 0,
-              "& .MuiDrawer-paper": {
-                width: drawerWidthExpanded,
-                boxSizing: "border-box",
-                border: "none",
-              },
+              "& .MuiDrawer-paper": { width: drawerWidthExpanded, boxSizing: "border-box", border: "none" },
             }}
             open
           >
@@ -648,33 +586,17 @@ const AuthorityDashboard: React.FC = () => {
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: "block", lg: "none" },
-            "& .MuiDrawer-paper": {
-              width: drawerWidthExpanded,
-              boxSizing: "border-box",
-              border: "none",
-            },
+            "& .MuiDrawer-paper": { width: drawerWidthExpanded, boxSizing: "border-box", border: "none" },
           }}
         >
           {drawer}
         </Drawer>
 
         {/* Floating unhide chevron only when collapsed */}
-        {sidebarCollapsed && (
-          <CollapsedToggle onClick={() => setSidebarCollapsed(false)} />
-        )}
+        {sidebarCollapsed && <CollapsedToggle onClick={() => setSidebarCollapsed(false)} />}
 
         {/* Main Content */}
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: { xs: 2, sm: 3 },
-            pt: { xs: 9, sm: 10 },
-            transition: "margin-left 0.0 ease",
-            //ml: { xs: 0, lg: `${sidebarCollapsed ? 0 : drawerWidthExpanded}px` },
-            maxWidth: "100%",
-          }}
-        >
+        <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, sm: 3 }, pt: { xs: 9, sm: 10 }, transition: "margin-left 0.0 ease", maxWidth: "100%" }}>
           {renderContent()}
         </Box>
       </Box>

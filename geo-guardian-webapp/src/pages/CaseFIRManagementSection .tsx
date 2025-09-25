@@ -109,7 +109,7 @@ const Shell = ({
 
 const StatusChip = ({ value }: { value: Status }) => {
   const color = value === "Active" ? "primary" : value === "Pending" ? "warning" : "default";
-  return <Chip label={value} color={color as any} size="small" />;
+  return <Chip label={value} color={color} size="small" />;
 };
 
 const Kpi = ({
@@ -171,7 +171,7 @@ const CaseFIRManagementSection: React.FC = () => {
     efirFiltered.filter((r) => r.status !== "Closed").length +
     complaintFiltered.filter((r) => r.status !== "Closed").length;
 
-  // Dialog selection state (must be inside component)
+  // Dialog selection state
   type DetailKind = { type: "efir"; data: EfirRow } | { type: "complaint"; data: ComplaintRow };
   const [selected, setSelected] = useState<DetailKind | null>(null);
 
@@ -190,11 +190,9 @@ const CaseFIRManagementSection: React.FC = () => {
     setComplaintRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: s } : r)));
   };
 
-  // Existing action stubs remain
-  const viewEfir = (no: string) => alert(`View FIR ${no}`);
+  // Existing action stubs
   const editEfir = (no: string) => alert(`Edit FIR ${no}`);
   const downloadEfir = (no: string) => alert(`Download FIR ${no}`);
-  const viewComplaint = (id: string) => alert(`View Complaint ${id}`);
   const linkToCase = (id: string) => alert(`Link Complaint ${id} → Case`);
   const closeComplaint = (id: string) =>
     setComplaintRows((prev) => prev.map((r) => (r.id === id ? { ...r, status: "Closed" } : r)));
@@ -209,7 +207,7 @@ const CaseFIRManagementSection: React.FC = () => {
       >
         <Grid container spacing={2}>
           <Grid item xs={12} sm={4} md={3}>
-            <Select fullWidth size="small" value={status} onChange={(e) => setStatus(e.target.value as any)}>
+            <Select fullWidth size="small" value={status} onChange={(e) => setStatus(e.target.value as Status | "All")}>
               <MenuItem value="All">All Status</MenuItem>
               <MenuItem value="Active">Active</MenuItem>
               <MenuItem value="Pending">Pending</MenuItem>
@@ -217,7 +215,7 @@ const CaseFIRManagementSection: React.FC = () => {
             </Select>
           </Grid>
           <Grid item xs={12} sm={4} md={3}>
-            <Select fullWidth size="small" value={region} onChange={(e) => setRegion(e.target.value as any)}>
+            <Select fullWidth size="small" value={region} onChange={(e) => setRegion(e.target.value as Region | "All")}>
               <MenuItem value="All">All Regions</MenuItem>
               {regions.map((r) => (
                 <MenuItem key={r} value={r}>
@@ -367,7 +365,7 @@ const CaseFIRManagementSection: React.FC = () => {
         </TableContainer>
       </Shell>
 
-      {/* Linked cases overview preserved as-is */}
+      {/* Linked cases overview */}
       <Shell title="Linked Cases Overview" subtitle="Quick snapshot of FIR–Complaint associations">
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>

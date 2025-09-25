@@ -3,8 +3,6 @@ import {
   Box,
   Typography,
   Card,
-  CardContent,
-  Divider,
   FormGroup,
   FormControlLabel,
   Switch,
@@ -14,29 +12,33 @@ import {
   Button,
 } from "@mui/material";
 
-const SystemSettingsNotificationsSection = () => {
+const SystemSettingsNotificationsSection: React.FC = () => {
   const [alertThreshold, setAlertThreshold] = useState(5);
+
   const [notifications, setNotifications] = useState({
     email: true,
     sms: false,
     push: true,
   });
+  type NotificationKey = keyof typeof notifications; // "email" | "sms" | "push"
+
   const [integrationUrls, setIntegrationUrls] = useState({
-    lawEnforcementApi: '',
-    emergencyServicesApi: '',
+    lawEnforcementApi: "",
+    emergencyServicesApi: "",
   });
 
-  const handleNotificationToggle = (name) => {
+  const handleNotificationToggle = (name: NotificationKey) => {
     setNotifications((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
-  const handleIntegrationChange = (event) => {
-    const { name, value } = event.target;
+  const handleIntegrationChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = event.target as { name: keyof typeof integrationUrls; value: string };
     setIntegrationUrls((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSaveSettings = () => {
-    // Add saving logic here
     alert("Settings saved!");
   };
 
@@ -47,7 +49,6 @@ const SystemSettingsNotificationsSection = () => {
       </Typography>
 
       <Grid container spacing={4}>
-
         {/* Alert Thresholds */}
         <Grid item xs={12} md={6}>
           <Card sx={{ p: 2 }}>
@@ -62,7 +63,7 @@ const SystemSettingsNotificationsSection = () => {
               step={1}
               marks
               valueLabelDisplay="auto"
-              onChange={(_, value) => setAlertThreshold(value)}
+              onChange={(_, value) => setAlertThreshold(value as number)}
             />
           </Card>
         </Grid>
@@ -75,15 +76,30 @@ const SystemSettingsNotificationsSection = () => {
             </Typography>
             <FormGroup>
               <FormControlLabel
-                control={<Switch checked={notifications.email} onChange={() => handleNotificationToggle('email')} />}
+                control={
+                  <Switch
+                    checked={notifications.email}
+                    onChange={() => handleNotificationToggle("email")}
+                  />
+                }
                 label="Email Notifications"
               />
               <FormControlLabel
-                control={<Switch checked={notifications.sms} onChange={() => handleNotificationToggle('sms')} />}
+                control={
+                  <Switch
+                    checked={notifications.sms}
+                    onChange={() => handleNotificationToggle("sms")}
+                  />
+                }
                 label="SMS Notifications"
               />
               <FormControlLabel
-                control={<Switch checked={notifications.push} onChange={() => handleNotificationToggle('push')} />}
+                control={
+                  <Switch
+                    checked={notifications.push}
+                    onChange={() => handleNotificationToggle("push")}
+                  />
+                }
                 label="Push Notifications"
               />
             </FormGroup>
@@ -119,7 +135,6 @@ const SystemSettingsNotificationsSection = () => {
             </Button>
           </Card>
         </Grid>
-
       </Grid>
     </Box>
   );
