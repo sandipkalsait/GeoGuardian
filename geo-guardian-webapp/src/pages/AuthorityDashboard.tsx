@@ -3,14 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 // Maps
-import { MapContainer, TileLayer, Rectangle } from "react-leaflet";
-import type { LatLngExpression, LatLngBoundsExpression } from "leaflet";
-import "leaflet/dist/leaflet.css";
-
-export type AuthorityDashboardProps = {
-  userName: string;
-  onLogout: () => void;
-};
+// react-leaflet removed earlier; keep placeholders instead of importing leaflet types
 
 import {
   AppBar,
@@ -37,11 +30,11 @@ import {
   Paper,
   Badge,
   Divider,
+  Button,
   Tooltip,
   useMediaQuery,
   ThemeProvider,
   createTheme,
-  Button,
 } from "@mui/material";
 
 import SearchIcon from "@mui/icons-material/Search";
@@ -58,7 +51,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import LogoutIcon from "@mui/icons-material/Logout";
 import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsActiveOutlined";
-import Button from "@mui/material/Button";
+// Button already imported above from @mui/material
 
 // react-leaflet removed due to typing mismatch; map placeholders used instead
 
@@ -153,12 +146,7 @@ const userData = [
   },
 ];
 
-// Map constants (typed)
-const mapCenter: LatLngExpression = [26.5, 92.5];
-const heatBounds: LatLngBoundsExpression = [
-  [24.0, 88.0],
-  [28.5, 96.0],
-];
+// Map constants removed — placeholder map is used in UI to avoid leaflet typing issues
 
 // Overview
 const OverviewSection: React.FC = () => {

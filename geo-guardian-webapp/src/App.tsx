@@ -4,10 +4,7 @@ import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-router-dom";
 
 
-type AuthorityDashboardProps = {
-  userName: string;
-  onLogout: () => void;
-};
+// AuthorityDashboard props are provided directly where used in routes
 
 import Logo from "/geo-guardian.png";
 import data from "./assets/data.json";
@@ -19,9 +16,7 @@ import AuthorityDashboard from "./pages/AuthorityDashboard";
 import PoliceDashboard from "./pages/PoliceDashboard";
 import TouristPage from "./pages/tourist";
 
-const AuthorityDashboardElement: React.FC<AuthorityDashboardProps> = (props) => (
-  <AuthorityDashboard {...props} />
-);
+// AuthorityDashboardElement removed — use `AuthorityDashboard` directly in routes
 
 const complaintData = [
   { id: "C1234", name: "Lost Wallet" },

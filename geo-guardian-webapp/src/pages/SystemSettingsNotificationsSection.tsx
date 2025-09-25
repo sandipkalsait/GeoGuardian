@@ -20,7 +20,7 @@ const SystemSettingsNotificationsSection: React.FC = () => {
     sms: false,
     push: true,
   });
-  type NotificationKey = keyof typeof notifications; // "email" | "sms" | "push"
+
 
   const [integrationUrls, setIntegrationUrls] = useState({
     lawEnforcementApi: "",
