@@ -1,5 +1,5 @@
 // src/pages/PoliceDashboard.tsx
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Drawer,
@@ -31,6 +31,8 @@ import {
   FormControl,
   InputLabel,
   Divider,
+  TextField,
+  Stack,
 } from "@mui/material";
 
 import MenuIcon from "@mui/icons-material/Menu";
@@ -55,84 +57,14 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+import { policeService, Incident, Unit } from "../Services/PoliceService";
+
 interface PoliceDashboardProps {
   userName: string;
   onLogout: () => void;
 }
 
-type IncidentStatus = "unassigned" | "dispatched" | "resolved";
-
-interface Incident {
-  id: string;
-  touristId: string;
-  type: string;
-  severity: "Low" | "Medium" | "High" | "Critical";
-  description: string;
-  lat: number;
-  lng: number;
-  timestamp: string;
-  status: IncidentStatus;
-  assignedUnitId?: string | null;
-  responseTimeMin?: number | null; // for analytics (mock)
-}
-
-interface Unit {
-  id: string;
-  name: string;
-  type: string;
-  lat: number;
-  lng: number;
-  status: "available" | "responding" | "offline";
-}
-
 const drawerWidth = 260;
-
-const initialIncidents: Incident[] = [
-  {
-    id: "INC-1001",
-    touristId: "T-501",
-    type: "SOS",
-    severity: "Critical",
-    description: "Solo tourist pressed panic near Old Fort at 1:12 AM",
-    lat: 19.9315,
-    lng: 73.8567,
-    timestamp: new Date(Date.now() - 1000 * 60 * 40).toISOString(),
-    status: "unassigned",
-    responseTimeMin: null,
-  },
-  {
-    id: "INC-1002",
-    touristId: "T-502",
-    type: "Geo-fence breach",
-    severity: "High",
-    description: "Group entered restricted zone near heritage site",
-    lat: 19.9340,
-    lng: 73.8540,
-    timestamp: new Date(Date.now() - 1000 * 60 * 160).toISOString(),
-    status: "dispatched",
-    assignedUnitId: "U-11",
-    responseTimeMin: 18,
-  },
-  {
-    id: "INC-1003",
-    touristId: "T-503",
-    type: "Harassment reported",
-    severity: "Medium",
-    description: "Tourist reported harassment near market",
-    lat: 19.9300,
-    lng: 73.8590,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(),
-    status: "resolved",
-    assignedUnitId: "U-10",
-    responseTimeMin: 25,
-  },
-];
-
-const initialUnits: Unit[] = [
-  { id: "U-10", name: "Patrol Car 10", type: "car", lat: 19.9345, lng: 73.8555, status: "available" },
-  { id: "U-11", name: "Patrol Bike 11", type: "bike", lat: 19.9320, lng: 73.8570, status: "responding" },
-  { id: "U-12", name: "Foot Patrol 12", type: "foot", lat: 19.9305, lng: 73.8530, status: "available" },
-];
 
 const menuItems = [
   { key: "overview", label: "Overview", icon: <DashboardIcon /> },
@@ -149,15 +81,35 @@ const menuItems = [
 const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [selected, setSelected] = useState<string>("overview");
-  const [incidents, setIncidents] = useState<Incident[]>(initialIncidents);
-  const [units, setUnits] = useState<Unit[]>(initialUnits);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
 
-  // Dialog state for viewing incident details and assigning units
+  // dialog states
   const [detailIncident, setDetailIncident] = useState<Incident | null>(null);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState<string>("");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  // helper metrics
+  // new incident form
+  const [newType, setNewType] = useState<string>("SOS");
+  const [newSeverity, setNewSeverity] = useState<"Low"|"Medium"|"High"|"Critical">("Medium");
+  const [newDesc, setNewDesc] = useState<string>("");
+  const [newLat, setNewLat] = useState<string>("");
+  const [newLng, setNewLng] = useState<string>("");
+
+  useEffect(() => {
+    // seed demo if empty (no-op if DB already has data)
+    policeService.seedIfEmpty().catch(console.error);
+
+    const unsubInc = policeService.listenIncidents(setIncidents);
+    const unsubUnits = policeService.listenUnits(setUnits);
+
+    return () => {
+      try { unsubInc && unsubInc(); } catch {}
+      try { unsubUnits && unsubUnits(); } catch {}
+    };
+  }, []);
+
   const metrics = useMemo(() => {
     const total = incidents.length;
     const active = incidents.filter((i) => i.status !== "resolved").length;
@@ -175,7 +127,6 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
     return { total, active, critical, resolved, avgResponse };
   }, [incidents]);
 
-  // mock time-series data for chart (last 7 days)
   const chartData = [
     { day: "Mon", incidents: 5 },
     { day: "Tue", incidents: 8 },
@@ -188,38 +139,68 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
 
   const toggleDrawer = () => setMobileOpen((s) => !s);
 
-  const handleOpenIncident = (inc: Incident) => {
-    setDetailIncident(inc);
-  };
-
-  const handleCloseIncident = () => {
-    setDetailIncident(null);
-    setAssignDialogOpen(false);
-    setSelectedUnit("");
-  };
-
   const openAssignDialog = (inc: Incident) => {
     setDetailIncident(inc);
+    setSelectedUnit(inc.assignedUnitId ?? "");
     setAssignDialogOpen(true);
   };
 
-  const handleAssignUnit = () => {
-    if (!detailIncident) return;
-    setIncidents((prev) =>
-      prev.map((p) => (p.id === detailIncident.id ? { ...p, assignedUnitId: selectedUnit, status: "dispatched" } : p))
-    );
-    setUnits((prev) => prev.map((u) => (u.id === selectedUnit ? { ...u, status: "responding" } : u)));
-    setAssignDialogOpen(false);
-    setSelectedUnit("");
-    setDetailIncident(null);
+  const handleAssignUnit = async () => {
+    if (!detailIncident || !selectedUnit) return;
+    try {
+      await policeService.assignUnit(detailIncident.id, selectedUnit);
+      setAssignDialogOpen(false);
+      setDetailIncident(null);
+      setSelectedUnit("");
+    } catch (err) {
+      console.error("Assign failed", err);
+      alert("Failed to assign unit. Check console.");
+    }
   };
 
-  // simple status update (resolve)
-  const handleResolve = (id: string) => {
-    setIncidents((prev) => prev.map((p) => (p.id === id ? { ...p, status: "resolved", responseTimeMin: p.responseTimeMin ?? 15 } : p)));
+  const handleResolve = async (inc: Incident) => {
+    try {
+      await policeService.resolveIncident(inc.id);
+      setDetailIncident(null);
+    } catch (err) {
+      console.error("Resolve failed", err);
+      alert("Failed to resolve. Check console.");
+    }
   };
 
-  // side menu content
+  const handleUpdateUnitStatus = async (unitId: string, status: Unit["status"]) => {
+    try {
+      await policeService.updateUnitStatus(unitId, status);
+    } catch (err) {
+      console.error("Update unit status failed", err);
+      alert("Failed to update unit status. See console.");
+    }
+  };
+
+  const handleCreateIncident = async () => {
+    try {
+      const payload = {
+        type: newType,
+        description: newDesc,
+        lat: newLat ? Number(newLat) : undefined,
+        lng: newLng ? Number(newLng) : undefined,
+        severity: newSeverity,
+      };
+      await policeService.createIncident(payload);
+      setCreateDialogOpen(false);
+      // clear fields
+      setNewDesc("");
+      setNewLat("");
+      setNewLng("");
+      setNewSeverity("Medium");
+      setNewType("SOS");
+    } catch (err) {
+      console.error("Create incident failed", err);
+      alert("Failed to create incident.");
+    }
+  };
+
+  // drawer content
   const drawer = (
     <Box sx={{ width: drawerWidth, px: 2, py: 3 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
@@ -262,8 +243,7 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
     </Box>
   );
 
-  // ========== Panels ==========
-
+  // Panels (Overview, Cases, Alerts, Patrols, etc.)
   function OverviewPanel() {
     return (
       <Box>
@@ -318,17 +298,21 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
 
           <Grid item xs={12} md={5}>
             <Paper sx={{ p: 2, height: 320 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Live Alerts
-              </Typography>
-              <List>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Typography variant="subtitle1">Live Alerts</Typography>
+                <Button variant="contained" size="small" onClick={() => setCreateDialogOpen(true)}>
+                  + New Incident
+                </Button>
+              </Stack>
+
+              <List sx={{ mt: 1 }}>
                 {incidents
-                    .slice()
-                    .sort((a, _b) => (a.status === "unassigned" ? -1 : 1))
+                  .slice()
+                  .sort((a, b) => (a.status === "unassigned" && b.status !== "unassigned" ? -1 : 1))
                   .map((inc) => (
-                    <ListItemButton key={inc.id} onClick={() => handleOpenIncident(inc)} sx={{ mb: 1 }}>
+                    <ListItemButton key={inc.id} onClick={() => setDetailIncident(inc)} sx={{ mb: 1 }}>
                       <ListItemText
-                        primary={`${inc.type} — ${inc.description}`}
+                        primary={`${inc.type} — ${inc.description || "No details"}`}
                         secondary={`${new Date(inc.timestamp).toLocaleString()} • ${inc.severity} • ${inc.status}`}
                       />
                       <Badge
@@ -358,7 +342,6 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
                   color: "text.secondary",
                 }}
               >
-                {/* Here you will plug React-Leaflet or Google Maps component */}
                 <Typography>Map will be integrated here (React-Leaflet / Google Maps)</Typography>
               </Box>
             </Paper>
@@ -380,7 +363,6 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
               <TableRow>
                 <TableCell>Case ID</TableCell>
                 <TableCell>Type</TableCell>
-                <TableCell>Tourist ID</TableCell>
                 <TableCell>Severity</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Time</TableCell>
@@ -392,15 +374,14 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
                 <TableRow key={c.id}>
                   <TableCell>{c.id}</TableCell>
                   <TableCell>{c.type}</TableCell>
-                  <TableCell>{c.touristId}</TableCell>
                   <TableCell>{c.severity}</TableCell>
                   <TableCell>{c.status}</TableCell>
                   <TableCell>{new Date(c.timestamp).toLocaleString()}</TableCell>
                   <TableCell align="right">
-                    <Button size="small" onClick={() => handleOpenIncident(c)}>
+                    <Button size="small" onClick={() => setDetailIncident(c)}>
                       View
                     </Button>
-                    <Button size="small" color="success" onClick={() => handleResolve(c.id)}>
+                    <Button size="small" color="success" onClick={() => handleResolve(c)}>
                       Resolve
                     </Button>
                   </TableCell>
@@ -432,7 +413,7 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
                   </Grid>
                   <Grid item xs={2} sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
                     <Button size="small" variant="contained" onClick={() => openAssignDialog(inc)}>Assign</Button>
-                    <Button size="small" color="inherit" onClick={() => handleOpenIncident(inc)}>Details</Button>
+                    <Button size="small" color="inherit" onClick={() => setDetailIncident(inc)}>Details</Button>
                   </Grid>
                 </Grid>
               </Paper>
@@ -453,9 +434,11 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
                 <Typography variant="subtitle2">{u.name}</Typography>
                 <Typography variant="body2">Type: {u.type}</Typography>
                 <Typography variant="body2">Status: {u.status}</Typography>
+                <Typography variant="caption" display="block">Last: {u.lastUpdated ? new Date(u.lastUpdated).toLocaleString() : "—"}</Typography>
                 <Box sx={{ mt: 1, display: "flex", gap: 1 }}>
-                  <Button size="small" onClick={() => setUnits((prev) => prev.map(p => p.id === u.id ? { ...p, status: "responding" } : p))}>Set Responding</Button>
-                  <Button size="small" onClick={() => setUnits((prev) => prev.map(p => p.id === u.id ? { ...p, status: "available" } : p))}>Set Available</Button>
+                  <Button size="small" onClick={() => handleUpdateUnitStatus(u.id, "responding")}>Set Responding</Button>
+                  <Button size="small" onClick={() => handleUpdateUnitStatus(u.id, "available")}>Set Available</Button>
+                  <Button size="small" onClick={() => handleUpdateUnitStatus(u.id, "offline")}>Set Offline</Button>
                 </Box>
               </Paper>
             </Grid>
@@ -566,29 +549,18 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
     );
   }
 
-  // choose panel
   const content = (() => {
     switch (selected) {
-      case "overview":
-        return <OverviewPanel />;
-      case "cases":
-        return <CasesPanel />;
-      case "alerts":
-        return <AlertsPanel />;
-      case "patrols":
-        return <PatrolsPanel />;
-      case "tourist":
-        return <TouristPanel />;
-      case "reports":
-        return <ReportsPanel />;
-      case "users":
-        return <UsersPanel />;
-      case "efir":
-        return <EFIRPanel />;
-      case "settings":
-        return <SettingsPanel />;
-      default:
-        return <OverviewPanel />;
+      case "overview": return <OverviewPanel />;
+      case "cases": return <CasesPanel />;
+      case "alerts": return <AlertsPanel />;
+      case "patrols": return <PatrolsPanel />;
+      case "tourist": return <TouristPanel />;
+      case "reports": return <ReportsPanel />;
+      case "users": return <UsersPanel />;
+      case "efir": return <EFIRPanel />;
+      case "settings": return <SettingsPanel />;
+      default: return <OverviewPanel />;
     }
   })();
 
@@ -610,7 +582,6 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
         </Toolbar>
       </AppBar>
 
-      {/* Desktop drawer */}
       <Drawer variant="permanent" sx={{
         width: drawerWidth,
         flexShrink: 0,
@@ -620,7 +591,6 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
         {drawer}
       </Drawer>
 
-      {/* Mobile drawer (temporary) */}
       <Drawer open={mobileOpen} onClose={toggleDrawer} variant="temporary" sx={{
         display: { xs: "block", md: "none" },
         [`& .MuiDrawer-paper`]: { width: drawerWidth }
@@ -634,7 +604,7 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
       </Box>
 
       {/* Incident detail dialog */}
-      <Dialog open={!!detailIncident} onClose={handleCloseIncident} maxWidth="sm" fullWidth>
+      <Dialog open={!!detailIncident} onClose={() => setDetailIncident(null)} maxWidth="sm" fullWidth>
         <DialogTitle>Incident Details</DialogTitle>
         <DialogContent>
           {detailIncident && (
@@ -646,20 +616,20 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
               </Typography>
               <Divider sx={{ my: 2 }} />
               <Typography>Assigned Unit: {detailIncident.assignedUnitId ?? "None"}</Typography>
-              <Typography>Location: {detailIncident.lat}, {detailIncident.lng}</Typography>
+              <Typography>Location: {detailIncident.lat ?? "—"}, {detailIncident.lng ?? "—"}</Typography>
             </>
           )}
         </DialogContent>
         <DialogActions>
           {detailIncident && detailIncident.status !== "resolved" && (
-            <Button onClick={() => openAssignDialog(detailIncident)}>Assign Unit</Button>
+            <Button onClick={() => detailIncident && openAssignDialog(detailIncident)}>Assign Unit</Button>
           )}
           {detailIncident && detailIncident.status !== "resolved" && (
-            <Button color="success" onClick={() => { detailIncident && handleResolve(detailIncident.id); handleCloseIncident(); }}>
+            <Button color="success" onClick={() => { detailIncident && handleResolve(detailIncident); }}>
               Mark Resolved
             </Button>
           )}
-          <Button onClick={handleCloseIncident}>Close</Button>
+          <Button onClick={() => setDetailIncident(null)}>Close</Button>
         </DialogActions>
       </Dialog>
 
@@ -684,6 +654,45 @@ const PoliceDashboard: React.FC<PoliceDashboardProps> = ({ userName, onLogout })
         <DialogActions>
           <Button onClick={() => setAssignDialogOpen(false)}>Cancel</Button>
           <Button onClick={handleAssignUnit} variant="contained" disabled={!selectedUnit}>Assign</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create incident dialog */}
+      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Incident</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <FormControl fullWidth>
+              <InputLabel id="type-label">Type</InputLabel>
+              <Select labelId="type-label" value={newType} label="Type" onChange={(e) => setNewType(e.target.value)}>
+                <MenuItem value="SOS">SOS</MenuItem>
+                <MenuItem value="Geo-fence breach">Geo-fence breach</MenuItem>
+                <MenuItem value="Harassment">Harassment</MenuItem>
+                <MenuItem value="Theft">Theft</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth>
+              <InputLabel id="sev-label">Severity</InputLabel>
+              <Select labelId="sev-label" value={newSeverity} label="Severity" onChange={(e) => setNewSeverity(e.target.value as any)}>
+                <MenuItem value="Low">Low</MenuItem>
+                <MenuItem value="Medium">Medium</MenuItem>
+                <MenuItem value="High">High</MenuItem>
+                <MenuItem value="Critical">Critical</MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField label="Description" multiline rows={3} value={newDesc} onChange={(e) => setNewDesc(e.target.value)} fullWidth />
+
+            <Stack direction="row" spacing={1}>
+              <TextField label="Lat" value={newLat} onChange={(e) => setNewLat(e.target.value)} />
+              <TextField label="Lng" value={newLng} onChange={(e) => setNewLng(e.target.value)} />
+            </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleCreateIncident} variant="contained">Create</Button>
         </DialogActions>
       </Dialog>
     </Box>
