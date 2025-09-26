@@ -57,7 +57,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-import { policeService, Incident, Unit } from "../Services/PoliceService";
+import { policeService } from "../Services/PoliceService";
+import type { Incident, Unit } from "../Services/PoliceService";
 
 interface PoliceDashboardProps {
   userName: string;

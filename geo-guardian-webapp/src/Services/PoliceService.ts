@@ -1,13 +1,10 @@
 // src/services/PoliceService.ts
 import {
   ref as dbRef,
-  push,
   set,
   update,
   get,
   onValue,
-  remove,
-  child,
 } from "firebase/database";
 import { db } from "./firebase.ts";
 import { generateId } from "../utils/generateId.ts";
@@ -127,7 +124,7 @@ class PoliceService {
 
     if (useFirebase()) {
       // push to firebase so key matches node key
-      const listRef = dbRef(db!, "incidents");
+      // const listRef = dbRef(db!, "incidents");
       // Use push to generate a key, but we want to use our id as key for predictable ids, so set at id.
       await set(dbRef(db!, `incidents/${incident.id}`), incident);
       return incident;
@@ -145,8 +142,8 @@ class PoliceService {
 
     if (useFirebase()) {
       // Try to get current incident to read assignedUnitId (if any)
-      const incidentSnap = await get(dbRef(db!, `incidents/${incidentId}`));
-      const incidentVal = incidentSnap.val() || null;
+      // const incidentSnap = await get(dbRef(db!, `incidents/${incidentId}`));
+      // const incidentVal = incidentSnap.val() || null;
 
       const updates: Record<string, any> = {};
       updates[`incidents/${incidentId}/assignedUnitId`] = unitId;
