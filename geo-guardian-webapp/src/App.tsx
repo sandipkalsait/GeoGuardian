@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link } from "react-ro
 // AuthorityDashboard props are provided directly where used in routes
 
 import Logo from "/geo-guardian.png";
+import HeroBanner from "/Geo-Guardian-intro.png";
 import data from "./assets/data.json";
 import "./App.css";
 
@@ -67,6 +68,10 @@ const LandingPage: React.FC = () => {
           
         </div>
       </nav>
+
+      <div className="gg-hero-banner">
+  <img src={HeroBanner} alt="Tourist Safety Banner" />
+</div>
        {/* Complaint Search Modal */}
       {showSearchModal && (
         <div className="gg-modal-overlay">
@@ -307,3 +312,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
