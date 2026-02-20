@@ -1,159 +1,197 @@
-// src/pages/PoliceDashboard.tsx
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  Container,
-  Grid,
-  Button,
-  Typography,
   Box,
-  Paper,
-  TextField,
-  CircularProgress,
+  Button,
   Card,
   CardContent,
+  Chip,
+  Container,
+  Grid,
+  TextField,
+  Typography,
 } from "@mui/material";
+import { useGeoGuardianRealtimeData } from "../hooks/useRealtimeData";
+import { updateEmergencyAlertStatus } from "../Services/realtimeDataService";
 
-interface PoliceDashboardProps {
-  userName: string;
-  onLogout: () => void;
-}
+const normalizeStatus = (value: string): string => {
+  const normalized = value.toLowerCase();
+  if (normalized.includes("resolve") || normalized.includes("close")) {
+    return "Resolved";
+  }
+  if (normalized.includes("progress") || normalized.includes("assigned")) {
+    return "In Progress";
+  }
+  return "Active";
+};
 
-const PoliceDashboard: React.FC<PoliceDashboardProps> = ({
-  userName,
-  onLogout,
-}) => {
-  // State for case login
-  const [caseId, setCaseId] = useState("");
-  const [casePassword, setCasePassword] = useState("");
-  const [isRequesting, setIsRequesting] = useState(false);
-  const [isApproved, setIsApproved] = useState(false);
+const statusColor = (
+  value: string,
+): "error" | "warning" | "success" | "default" => {
+  if (value === "Resolved") {
+    return "success";
+  }
+  if (value === "In Progress") {
+    return "warning";
+  }
+  if (value === "Active") {
+    return "error";
+  }
+  return "default";
+};
 
-  // Mock approved case data (replace with API later)
-  const approvedCase = {
-    user: {
-      name: "Rahul Mehta",
-      id: "U101",
-      phone: "+91 98765 43210",
-    },
-    location: "19.9975° N, 73.7898° E",
-    status: "Active SOS Case",
-  };
+const SearchPage: React.FC = () => {
+  const initialQuery =
+    new URLSearchParams(window.location.search).get("complaint") || "";
+  const [query, setQuery] = useState(initialQuery);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const handleCaseRequest = () => {
-    setIsRequesting(true);
+  const { emergencyAlerts, tourists } = useGeoGuardianRealtimeData();
 
-    // Simulate backend call + authority approval delay
-    setTimeout(() => {
-      setIsRequesting(false);
-      setIsApproved(true); // Authority approves
-    }, 2000);
-  };
+  const touristMap = useMemo(
+    () =>
+      new Map(
+        tourists.data.map((tourist) => [tourist.touristId, tourist.fullName]),
+      ),
+    [tourists.data],
+  );
 
-  const handleLogout = () => {
-    onLogout();
+  const results = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const source = emergencyAlerts.data.map((alert) => ({
+      id: alert.alertId || alert.id,
+      key: `${alert.sourceCollection}:${alert.docId}`,
+      title: alert.title || alert.type || "Emergency Alert",
+      status: normalizeStatus(alert.status),
+      severity: alert.severity || "medium",
+      createdAt:
+        alert.createdAt?.toLocaleString() ||
+        alert.alertTime?.toLocaleString() ||
+        "-",
+      description: alert.description || "No description",
+      location: alert.address || "Unknown location",
+      tourist:
+        touristMap.get(alert.touristId) ||
+        alert.touristId ||
+        alert.userId ||
+        "Unknown tourist",
+      sourceCollection: alert.sourceCollection,
+      docId: alert.docId,
+      searchable: [
+        alert.alertId,
+        alert.id,
+        alert.touristId,
+        alert.userId,
+        alert.address,
+        alert.title,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase(),
+    }));
+
+    if (!normalizedQuery) {
+      return source;
+    }
+
+    return source.filter((row) => row.searchable.includes(normalizedQuery));
+  }, [emergencyAlerts.data, query, touristMap]);
+
+  const updateStatus = async (
+    row: { id: string; sourceCollection: string; docId: string },
+    status: string,
+  ) => {
+    setUpdatingId(row.id);
+    try {
+      await updateEmergencyAlertStatus(
+        {
+          sourceCollection: row.sourceCollection,
+          docId: row.docId,
+        },
+        status,
+      );
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 6, mb: 6 }}>
-      <Typography variant="h4" gutterBottom>
-        👮 Police Dashboard — Welcome, {userName}
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 6 }}>
+      <Typography variant="h5" sx={{ mb: 1 }}>
+        Case Search
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        Search realtime emergency alerts using complaint ID, alert ID, tourist ID, or location.
       </Typography>
 
-      {/* If no case approved yet */}
-      {!isApproved ? (
-        <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-          <Typography variant="h6" gutterBottom>
-            Enter Case Credentials
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Case ID"
-                value={caseId}
-                onChange={(e) => setCaseId(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="Case Password"
-                type="password"
-                value={casePassword}
-                onChange={(e) => setCasePassword(e.target.value)}
-              />
-            </Grid>
+      <TextField
+        fullWidth
+        label="Search complaint / case"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        sx={{ mb: 3 }}
+      />
+
+      <Grid container spacing={2}>
+        {results.map((row) => (
+          <Grid item xs={12} md={6} key={row.key}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                    {row.id}
+                  </Typography>
+                  <Chip label={row.status} color={statusColor(row.status)} size="small" />
+                </Box>
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>Title:</strong> {row.title}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>Tourist:</strong> {row.tourist}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>Location:</strong> {row.location}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>Severity:</strong> {row.severity}
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 0.5 }}>
+                  <strong>Created:</strong> {row.createdAt}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+                  {row.description}
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={updatingId === row.id}
+                    onClick={() => updateStatus(row, "in_progress")}
+                  >
+                    Mark In Progress
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="success"
+                    disabled={updatingId === row.id}
+                    onClick={() => updateStatus(row, "resolved")}
+                  >
+                    Mark Resolved
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
           </Grid>
-          <Box sx={{ mt: 3 }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleCaseRequest}
-              disabled={!caseId || !casePassword || isRequesting}
-            >
-              {isRequesting ? (
-                <>
-                  <CircularProgress size={20} sx={{ mr: 1 }} /> Requesting...
-                </>
-              ) : (
-                "Request Access"
-              )}
-            </Button>
-          </Box>
-          {isRequesting && (
-            <Typography sx={{ mt: 2 }} color="text.secondary">
-              Waiting for authority approval...
-            </Typography>
-          )}
-        </Paper>
-      ) : (
-        // After approval → Show case details
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            🚨 Active Case Details
-          </Typography>
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6">User Information</Typography>
-              <Typography>Name: {approvedCase.user.name}</Typography>
-              <Typography>User ID: {approvedCase.user.id}</Typography>
-              <Typography>Phone: {approvedCase.user.phone}</Typography>
-            </CardContent>
-          </Card>
+        ))}
+      </Grid>
 
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6">Location</Typography>
-              <Typography>Last Known: {approvedCase.location}</Typography>
-              {/* Later → Add Map Component */}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Case Status</Typography>
-              <Typography>{approvedCase.status}</Typography>
-              <Box sx={{ mt: 2, display: "flex", gap: 2 }}>
-                <Button variant="contained" color="warning">
-                  Mark In-Progress
-                </Button>
-                <Button variant="contained" color="success">
-                  Mark Resolved
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </Box>
+      {results.length === 0 && (
+        <Typography sx={{ mt: 4 }} color="text.secondary">
+          No matching cases found.
+        </Typography>
       )}
-
-      {/* Logout */}
-      <Box sx={{ mt: 5 }}>
-        <Button variant="outlined" color="error" onClick={handleLogout}>
-          Logout
-        </Button>
-      </Box>
     </Container>
   );
 };
 
-export default PoliceDashboard;
+export default SearchPage;

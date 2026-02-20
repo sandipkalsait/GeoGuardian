@@ -1,5 +1,5 @@
 // AlertManagementSection.tsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Box,
   Paper,
@@ -29,6 +29,13 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import SendIcon from "@mui/icons-material/Send";
 import PriorityHighIcon from "@mui/icons-material/PriorityHigh";
 import DownloadIcon from "@mui/icons-material/Download";
+import { useGeoGuardianRealtimeData } from "../hooks/useRealtimeData";
+import {
+  updateEmergencyAlertStatus,
+  type EmergencyAlertRecord,
+  type SafetyScoreRecord,
+  type TouristIdentityRecord,
+} from "../Services/realtimeDataService";
 
 // Mock types and data (replace via API)
 type Zone = "Safe" | "Risky" | "Danger";
@@ -51,6 +58,8 @@ type LiveAlert = {
   zone: Zone;
   assigned: string[];
   createdAt: string;
+  sourceCollection?: string;
+  docId?: string;
 };
 
 const mockTourists: TouristAlert[] = [
@@ -66,6 +75,96 @@ const mockLiveAlerts: LiveAlert[] = [
   { id: "AL-3099", title: "Crowd surge risk", app: "Geo‑Beacon", region: "Pune", zone: "Risky", assigned: ["Ops-2"], createdAt: "5m ago" },
   { id: "AL-3098", title: "Lost contact ping", app: "App", region: "Nagpur", zone: "Safe", assigned: ["Ops-1"], createdAt: "7m ago" },
 ];
+
+const getZoneFromScore = (score: number | null): Zone => {
+  if (score == null) {
+    return "Risky";
+  }
+  if (score >= 75) {
+    return "Safe";
+  }
+  if (score >= 50) {
+    return "Risky";
+  }
+  return "Danger";
+};
+
+const getZoneFromSeverity = (severity: string): Zone => {
+  const normalized = (severity || "").toLowerCase();
+  if (normalized === "critical" || normalized === "high") {
+    return "Danger";
+  }
+  if (normalized === "medium") {
+    return "Risky";
+  }
+  return "Safe";
+};
+
+const toTimeAgo = (date: Date | null): string => {
+  if (!date) {
+    return "now";
+  }
+  const diffSec = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (diffSec < 60) {
+    return `${diffSec}s ago`;
+  }
+  if (diffSec < 3600) {
+    return `${Math.floor(diffSec / 60)}m ago`;
+  }
+  return `${Math.floor(diffSec / 3600)}h ago`;
+};
+
+const extractRegion = (address: string): string => {
+  if (!address) {
+    return "Unknown";
+  }
+  const parts = address
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (parts.length >= 2) {
+    return parts[parts.length - 2];
+  }
+  return parts[0] || "Unknown";
+};
+
+const extractArea = (address: string): string => {
+  if (!address) {
+    return "Unknown";
+  }
+  return address.split(",")[0]?.trim() || "Unknown";
+};
+
+const mapTouristRow = (
+  tourist: TouristIdentityRecord,
+  scoreByUserId: Map<string, number | null>,
+): TouristAlert => ({
+  id: tourist.touristId || tourist.id,
+  tourist: tourist.fullName || "Unknown",
+  digitalId: tourist.digitalId || tourist.touristId || tourist.id,
+  area: extractArea(tourist.address),
+  region: extractRegion(tourist.address),
+  zone: getZoneFromScore(scoreByUserId.get(tourist.userId) ?? null),
+  lastSeen: (tourist.updatedAt || tourist.createdAt || new Date()).toLocaleTimeString(
+    [],
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+    },
+  ),
+});
+
+const mapLiveAlert = (alert: EmergencyAlertRecord): LiveAlert => ({
+  id: alert.alertId || alert.id,
+  title: alert.title || "Emergency Alert",
+  app: alert.triggeredBy || alert.type || "App",
+  region: extractRegion(alert.address),
+  zone: getZoneFromSeverity(alert.severity),
+  assigned: alert.assignedOfficerId ? [alert.assignedOfficerId] : ["Unassigned"],
+  createdAt: toTimeAgo(alert.alertTime || alert.createdAt),
+  sourceCollection: alert.sourceCollection,
+  docId: alert.docId,
+});
 
 // Styled card shell
 const Shell = ({ title, subtitle, actions, children }: { title: string; subtitle?: string; actions?: React.ReactNode; children: React.ReactNode }) => (
@@ -107,18 +206,38 @@ const Kpi = ({ label, value, delta, color, icon }: { label: string; value: numbe
 );
 
 const AlertManagementSection: React.FC = () => {
-  // Data state (swap to fetch from API)
-  const [rows] = useState<TouristAlert[]>(mockTourists);
-  const [live] = useState<LiveAlert[]>(mockLiveAlerts);
+  const { emergencyAlerts, tourists, safetyScores } = useGeoGuardianRealtimeData();
 
   // Filters
   const [zoneFilter, setZoneFilter] = useState<Zone | "All">("All");
   const [region, setRegion] = useState<string>("All");
   const [date, setDate] = useState<string>("");
 
-  useEffect(() => {
-    // loadData(); // connect API here
-  }, []);
+  const scoreByUserId = useMemo(() => {
+    const map = new Map<string, number | null>();
+    safetyScores.data.forEach((score: SafetyScoreRecord) => {
+      map.set(score.userId, score.overallScore);
+    });
+    return map;
+  }, [safetyScores.data]);
+
+  const rows = useMemo(
+    () =>
+      tourists.data.length
+        ? tourists.data.map((tourist: TouristIdentityRecord) =>
+            mapTouristRow(tourist, scoreByUserId),
+          )
+        : mockTourists,
+    [tourists.data, scoreByUserId],
+  );
+
+  const live = useMemo(
+    () =>
+      emergencyAlerts.data.length
+        ? emergencyAlerts.data.map((alert: EmergencyAlertRecord) => mapLiveAlert(alert))
+        : mockLiveAlerts,
+    [emergencyAlerts.data],
+  );
 
   const filtered = useMemo(() => {
     return rows.filter(r => (zoneFilter === "All" || r.zone === zoneFilter) && (region === "All" || r.region === region));
@@ -133,8 +252,32 @@ const AlertManagementSection: React.FC = () => {
   const regions = Array.from(new Set(rows.map(r => r.region)));
 
   // Row actions
-  const notify = (id: string) => alert(`Notify ${id}`);
-  const escalate = (id: string) => alert(`Escalate ${id} to Response`);
+  const notify = async (id: string) => {
+    const target = live.find((entry) => entry.id === id);
+    if (target?.sourceCollection && target.docId) {
+      await updateEmergencyAlertStatus(
+        {
+          sourceCollection: target.sourceCollection,
+          docId: target.docId,
+        },
+        "acknowledged",
+      );
+    }
+    alert(`Notify ${id}`);
+  };
+  const escalate = async (id: string) => {
+    const target = live.find((entry) => entry.id === id);
+    if (target?.sourceCollection && target.docId) {
+      await updateEmergencyAlertStatus(
+        {
+          sourceCollection: target.sourceCollection,
+          docId: target.docId,
+        },
+        "resolved",
+      );
+    }
+    alert(`Escalate ${id} to Response`);
+  };
   const view = (id: string) => alert(`View details for ${id}`);
 
   return (
@@ -206,8 +349,16 @@ const AlertManagementSection: React.FC = () => {
                 {a.assigned.map(name => <Chip key={name} label={name} size="small" variant="outlined" />)}
               </Box>
               <Box sx={{ display: "flex", gap: 1 }}>
-                <Button size="small" variant="outlined">Preview</Button>
-                <Button size="small" variant="contained">Acknowledge</Button>
+                <Button size="small" variant="outlined" onClick={() => view(a.id)}>
+                  Preview
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={() => notify(a.id)}
+                >
+                  Acknowledge
+                </Button>
               </Box>
             </Paper>
           </Grid>

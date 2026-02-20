@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -21,14 +21,21 @@ import {
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
+import { useGeoGuardianRealtimeData } from "../hooks/useRealtimeData";
+import {
+  assignEmergencyAlertOfficer,
+  updateEmergencyAlertStatus,
+  type EmergencyAlertRecord,
+  type UserProfileRecord,
+} from "../Services/realtimeDataService";
 
-const rescueTeams = [
+const fallbackRescueTeams = [
   { id: "TeamA", name: "Rescue Team A", contact: "123-456-7890", available: true },
   { id: "TeamB", name: "Rescue Team B", contact: "987-654-3210", available: false },
   { id: "TeamC", name: "Rescue Team C", contact: "555-666-7777", available: true },
 ];
 
-const activeAlerts = [
+const fallbackActiveAlerts = [
   { id: "ALRT-2001", description: "Flood in Sector 5" },
   { id: "ALRT-2002", description: "Landslide near Highway 23" },
 ];
@@ -51,6 +58,33 @@ const initialSos: SosItem[] = [
   { id: "SOS-9001", tourist: "John Doe", phone: "+91-99999-11111", location: "City Museum - Gate 2", time: "14:02", status: "New", priority: "High" },
   { id: "SOS-9002", tourist: "Jane Smith", phone: "+91-88888-22222", location: "Riverside Park North", time: "14:06", status: "Acknowledged", priority: "Critical" },
 ];
+
+const toPriority = (severity: string): Priority => {
+  switch ((severity || "").toLowerCase()) {
+    case "critical":
+      return "Critical";
+    case "high":
+      return "High";
+    case "low":
+      return "Low";
+    default:
+      return "Medium";
+  }
+};
+
+const toSosStatus = (status: string): SosStatus => {
+  switch ((status || "").toLowerCase()) {
+    case "resolved":
+    case "closed":
+      return "Resolved";
+    case "acknowledged":
+    case "assigned":
+    case "in_progress":
+      return "Acknowledged";
+    default:
+      return "New";
+  }
+};
 
 const Card = ({
   title,
@@ -102,31 +136,128 @@ const Card = ({
 );
 
 const EmergencyResponseCoordinationSection: React.FC = () => {
+  const { emergencyAlerts, users } = useGeoGuardianRealtimeData();
   // Dispatch UI state
   const [selectedAlert, setSelectedAlert] = useState("");
   const [selectedTeam, setSelectedTeam] = useState("");
   const [priority, setPriority] = useState<Priority>("High");
   const [notes, setNotes] = useState("");
 
-  // SOS list
-  const [sos, setSos] = useState<SosItem[]>(initialSos);
+  const rescueTeams = useMemo(() => {
+    if (!users.data.length) {
+      return fallbackRescueTeams;
+    }
+    return users.data
+      .filter((user: UserProfileRecord) => user.userType !== "tourist")
+      .map((user: UserProfileRecord) => ({
+        id: user.userId || user.id,
+        name: user.name || user.userId || "Rescue Team",
+        contact: user.phoneNumber || "-",
+        available: user.isActive,
+      }));
+  }, [users.data]);
 
-  const handleDispatch = () => {
+  const activeAlerts = useMemo(() => {
+    if (!emergencyAlerts.data.length) {
+      return fallbackActiveAlerts;
+    }
+    return emergencyAlerts.data
+      .filter(
+        (alert: EmergencyAlertRecord) =>
+          toSosStatus(alert.status) !== "Resolved",
+      )
+      .map((alert: EmergencyAlertRecord) => ({
+        id: alert.alertId || alert.id,
+        description: alert.description || alert.title || "Emergency Alert",
+      }));
+  }, [emergencyAlerts.data]);
+
+  const sos = useMemo(() => {
+    if (!emergencyAlerts.data.length) {
+      return initialSos;
+    }
+    const mapped = emergencyAlerts.data
+      .filter((alert: EmergencyAlertRecord) => {
+        const type = (alert.type || alert.triggeredBy || "").toLowerCase();
+        return type.includes("sos") || type.includes("panic") || type.includes("emergency");
+      })
+      .map((alert: EmergencyAlertRecord) => ({
+        id: alert.alertId || alert.id,
+        tourist: alert.touristId || "Unknown",
+        phone:
+          (typeof alert.raw.phoneNumber === "string" && alert.raw.phoneNumber) ||
+          "N/A",
+        location: alert.address || "Unknown location",
+        time: (alert.alertTime || alert.createdAt || new Date()).toLocaleTimeString(
+          [],
+          { hour: "2-digit", minute: "2-digit" },
+        ),
+        status: toSosStatus(alert.status),
+        priority: toPriority(alert.severity),
+      }));
+    return mapped.length ? mapped : initialSos;
+  }, [emergencyAlerts.data]);
+
+  const handleDispatch = async () => {
     if (!selectedAlert || !selectedTeam) {
       alert("Please select an alert and a rescue team before dispatching.");
       return;
     }
+    const alertRecord = emergencyAlerts.data.find(
+      (record) => (record.alertId || record.id) === selectedAlert,
+    );
+
+    if (alertRecord?.sourceCollection && alertRecord.docId) {
+      await assignEmergencyAlertOfficer(
+        {
+          sourceCollection: alertRecord.sourceCollection,
+          docId: alertRecord.docId,
+        },
+        selectedTeam,
+      );
+      await updateEmergencyAlertStatus(
+        {
+          sourceCollection: alertRecord.sourceCollection,
+          docId: alertRecord.docId,
+        },
+        "acknowledged",
+      );
+    }
     alert(
-      `Dispatched ${selectedTeam} to alert ${selectedAlert}\nPriority: ${priority}\nNotes: ${notes || "-"}`
+      `Dispatched ${teamName} to alert ${selectedAlert}\nPriority: ${priority}\nNotes: ${notes || "-"}`
     );
     setNotes("");
   };
 
-  const acknowledgeSos = (id: string) =>
-    setSos((prev) => prev.map((s) => (s.id === id ? { ...s, status: "Acknowledged" } : s)));
+  const acknowledgeSos = async (id: string) => {
+    const alertRecord = emergencyAlerts.data.find(
+      (record) => (record.alertId || record.id) === id,
+    );
+    if (alertRecord?.sourceCollection && alertRecord.docId) {
+      await updateEmergencyAlertStatus(
+        {
+          sourceCollection: alertRecord.sourceCollection,
+          docId: alertRecord.docId,
+        },
+        "acknowledged",
+      );
+    }
+  };
 
-  const resolveSos = (id: string) =>
-    setSos((prev) => prev.map((s) => (s.id === id ? { ...s, status: "Resolved" } : s)));
+  const resolveSos = async (id: string) => {
+    const alertRecord = emergencyAlerts.data.find(
+      (record) => (record.alertId || record.id) === id,
+    );
+    if (alertRecord?.sourceCollection && alertRecord.docId) {
+      await updateEmergencyAlertStatus(
+        {
+          sourceCollection: alertRecord.sourceCollection,
+          docId: alertRecord.docId,
+        },
+        "resolved",
+      );
+    }
+  };
 
   const chipForStatus = (st: SosStatus) =>
     st === "Resolved"
@@ -267,7 +398,7 @@ const EmergencyResponseCoordinationSection: React.FC = () => {
               {rescueTeams
                 .filter((t) => t.available)
                 .map((team) => (
-                  <MenuItem key={team.id} value={team.name}>
+                  <MenuItem key={team.id} value={team.id}>
                     {team.name}
                   </MenuItem>
                 ))}
@@ -358,3 +489,5 @@ const EmergencyResponseCoordinationSection: React.FC = () => {
 };
 
 export default EmergencyResponseCoordinationSection;
+    const teamName =
+      rescueTeams.find((team) => team.id === selectedTeam)?.name || selectedTeam;

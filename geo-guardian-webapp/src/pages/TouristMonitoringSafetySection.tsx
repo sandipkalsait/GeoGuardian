@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -15,27 +15,102 @@ import {
   Grid,
   Chip,
 } from "@mui/material";
+import { useGeoGuardianRealtimeData } from "../hooks/useRealtimeData";
+import type {
+  EmergencyAlertRecord,
+  SafetyScoreRecord,
+  TouristIdentityRecord,
+} from "../Services/realtimeDataService";
 
-const touristLocations = [
+const fallbackTouristLocations = [
   { id: 1, name: "John Doe", lat: 19.076, lng: 72.8777, lastSeen: "2025-09-23 09:30" },
   { id: 2, name: "Jane Smith", lat: 18.5204, lng: 73.8567, lastSeen: "2025-09-23 09:28" },
   { id: 3, name: "Alice Johnson", lat: 28.7041, lng: 77.1025, lastSeen: "2025-09-23 09:15" },
 ];
 
-const aiAlerts = [
+const fallbackAiAlerts = [
   { id: "RISK-001", description: "Loitering detected near restricted zone", severity: "High", timestamp: "2025-09-23 08:45" },
   { id: "RISK-002", description: "Unauthorized crossing of safety boundary", severity: "Medium", timestamp: "2025-09-23 08:30" },
 ];
 
 const severityColors: Record<string, "error" | "warning" | "default"> = {
+  Critical: "error",
   High: "error",
   Medium: "warning",
   Low: "default"
 };
 
+const toSeverityLabel = (severity: string): string => {
+  const normalized = (severity || "").toLowerCase();
+  if (normalized === "critical") return "Critical";
+  if (normalized === "high") return "High";
+  if (normalized === "low") return "Low";
+  return "Medium";
+};
+
 const TouristMonitoringSafetySection = () => {
+  const { tourists, emergencyAlerts, safetyScores } = useGeoGuardianRealtimeData();
   const [geoFenceEnabled, setGeoFenceEnabled] = useState(true);
   const [hotspotManagementEnabled, setHotspotManagementEnabled] = useState(false);
+
+  const touristLocations = useMemo(() => {
+    if (!tourists.data.length) {
+      return fallbackTouristLocations;
+    }
+    return tourists.data.map((tourist: TouristIdentityRecord, index: number) => ({
+      id: tourist.touristId || tourist.id || index + 1,
+      name: tourist.fullName || "Unknown",
+      lat:
+        typeof tourist.raw.latitude === "number"
+          ? tourist.raw.latitude
+          : typeof tourist.raw.lat === "number"
+            ? tourist.raw.lat
+            : 0,
+      lng:
+        typeof tourist.raw.longitude === "number"
+          ? tourist.raw.longitude
+          : typeof tourist.raw.lng === "number"
+            ? tourist.raw.lng
+            : 0,
+      lastSeen: (tourist.updatedAt || tourist.createdAt || new Date()).toLocaleString(),
+    }));
+  }, [tourists.data]);
+
+  const aiAlerts = useMemo(() => {
+    if (!emergencyAlerts.data.length) {
+      return fallbackAiAlerts;
+    }
+    return emergencyAlerts.data
+      .slice()
+      .sort((a: EmergencyAlertRecord, b: EmergencyAlertRecord) => {
+        const at = (a.updatedAt || a.createdAt || a.alertTime || new Date()).getTime();
+        const bt = (b.updatedAt || b.createdAt || b.alertTime || new Date()).getTime();
+        return bt - at;
+      })
+      .slice(0, 6)
+      .map((alert: EmergencyAlertRecord) => ({
+        id: alert.alertId || alert.id,
+        description:
+          alert.description ||
+          alert.title ||
+          "Potential safety risk detected in monitored zone",
+        severity: toSeverityLabel(alert.severity),
+        timestamp: (alert.alertTime || alert.createdAt || new Date()).toLocaleString(),
+      }));
+  }, [emergencyAlerts.data]);
+
+  const avgScore = useMemo(() => {
+    if (!safetyScores.data.length) {
+      return null;
+    }
+    const valid = safetyScores.data
+      .map((score: SafetyScoreRecord) => score.overallScore)
+      .filter((score): score is number => typeof score === "number");
+    if (!valid.length) {
+      return null;
+    }
+    return valid.reduce((sum, score) => sum + score, 0) / valid.length;
+  }, [safetyScores.data]);
 
   return (
     <Box>
@@ -81,7 +156,9 @@ const TouristMonitoringSafetySection = () => {
         color: "#999",
         fontSize: 18,
       }}>
-        Live Movement Heatmap Placeholder
+        {avgScore != null
+          ? `Live Movement Heatmap Placeholder • Avg Safety Score ${avgScore.toFixed(2)}`
+          : "Live Movement Heatmap Placeholder"}
       </Box>
 
       {/* AI Alerts */}

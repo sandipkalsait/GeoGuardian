@@ -10,11 +10,13 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
-import logo from "/build/geo-guardian.png"; 
-
+import logo from "/build/geo-guardian.png";
 
 interface LoginPageProps {
-  onLoginSuccess: (role: "authority" | "police", name: string) => void;
+  onLoginSuccess: (
+    role: "authority" | "police" | "counsellor",
+    name: string,
+  ) => void;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
@@ -29,12 +31,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       onLoginSuccess("authority", "Authority User");
     } else if (username === "police" && password === "password") {
       onLoginSuccess("police", "Police Officer");
+    } else if (username === "counsellor" && password === "password") {
+      onLoginSuccess("counsellor", "Counsellor HeadOfficer");
     } else {
       setError("Invalid username or password");
     }
   };
-
-
 
   return (
     <Container maxWidth="xs">
@@ -55,11 +57,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             style={{ width: 150, height: 100 }} // Adjust size as needed
           />
         </Box>
-        <Typography component="h1" variant="h5" align="center" gutterBottom sx={{ fontWeight: "bold", color: "#003366" }}>
+        <Typography
+          component="h1"
+          variant="h5"
+          align="center"
+          gutterBottom
+          sx={{ fontWeight: "bold", color: "#003366" }}
+        >
           Geo Guardian Login
         </Typography>
-        <br/>
-      
+        <br />
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}

@@ -27,10 +27,13 @@ const LandingPage: React.FC = () => {
         </div>
         <div className="gg-navbar-sub">MVP — Prototype</div>
         <div>
-          <a href="/login" className="gg-btn">Login</a>
-          <a href="/register" className="gg-btn">Register</a>
+          <a href="/login" className="gg-btn">
+            Login
+          </a>
+          <a href="/register" className="gg-btn">
+            Register
+          </a>
         </div>
-        
       </nav>
 
       <main className="gg-main">
